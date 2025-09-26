@@ -23,7 +23,7 @@
  ****************************************************************************/
 /* eslint-disable max-len */
 const os = require('os');
-const hostname = os.hostname();
+const hostname = 'localhost';
 const configEnv = {
   // This is the default configuration, override by the following sections
   default: {
