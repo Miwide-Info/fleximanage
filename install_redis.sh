@@ -2,6 +2,12 @@
 
 set -e  # Exit immediately if any command fails
 
+# Detect init system (systemd vs sysv) early
+IS_SYSTEMD=0
+if [[ -d /run/systemd/system ]] || [[ $(ps -p 1 -o comm= 2>/dev/null) == systemd ]]; then
+    IS_SYSTEMD=1
+fi
+
 # Configuration variables
 REDIS_PORT="6379"
 REDIS_USER="redis"
@@ -35,6 +41,12 @@ else
     exit 1
 fi
 
+# Ensure redis group exists (some minimal images may miss it even after package install)
+if ! getent group "$REDIS_GROUP" >/dev/null 2>&1; then
+    echo "Creating group: $REDIS_GROUP"
+    groupadd --system "$REDIS_GROUP" || true
+fi
+
 # Create Redis user and group if they don't exist
 if ! id "$REDIS_USER" &>/dev/null; then
     echo "Creating dedicated user: $REDIS_USER"
@@ -57,8 +69,17 @@ if [ -f "$REDIS_CONF_FILE" ]; then
     echo "Backed up original configuration to ${REDIS_CONF_FILE}.bak"
 fi
 
-# Create or update Redis configuration
 echo "Configuring Redis..."
+
+# Decide daemonize & supervised mode
+if [[ $IS_SYSTEMD -eq 1 ]]; then
+    DAEMONIZE="no"          # systemd 期望前台进程
+    SUPERVISED="systemd"
+else
+    DAEMONIZE="yes"         # 传统 sysv / 容器简单场景
+    SUPERVISED="no"
+fi
+
 cat > "$REDIS_CONF_FILE" << EOF
 # Redis configuration file
 
@@ -68,8 +89,12 @@ port $REDIS_PORT
 # Bind to all interfaces
 bind 0.0.0.0
 
-# Run as a daemon
-daemonize yes
+# IPv6 is disabled by binding to 0.0.0.0
+
+# Run as a daemon (systemd 环境设为 no)
+daemonize ${DAEMONIZE}
+
+# Supervision mode	supervised ${SUPERVISED}
 
 # PID file
 pidfile /var/run/redis/redis-server.pid
@@ -112,7 +137,7 @@ rdbcompression yes
 rdbchecksum yes
 dbfilename dump.rdb
 
-# Redis server will run with this user
+# Redis ACL example user (保留原语义，可按需调整)
 user $REDIS_USER on >@all -@admin ~* +@all
 EOF
 
@@ -120,9 +145,10 @@ EOF
 chown "$REDIS_USER:$REDIS_GROUP" "$REDIS_CONF_FILE"
 chmod 644 "$REDIS_CONF_FILE"
 
-# Create init.d service script
-echo "Creating init.d service script..."
-cat > "/etc/init.d/redis-server" << 'EOF'
+if [[ $IS_SYSTEMD -eq 0 ]]; then
+    # 仅在非 systemd 环境创建 init.d 脚本
+    echo "Creating init.d service script (sysv)..."
+    cat > "/etc/init.d/redis-server" << 'EOF'
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          redis-server
@@ -149,11 +175,31 @@ PIDFILE=/var/run/redis/redis-server.pid
 start() {
     echo "Starting $DESC..."
     if [ -f $PIDFILE ]; then
-        if kill -0 $(cat $PIDFILE) 2>/dev/null; then
-            echo "$NAME is already running"
-            return 0
+        oldpid=$(cat $PIDFILE 2>/dev/null || true)
+        if [ -n "$oldpid" ] && kill -0 "$oldpid" 2>/dev/null; then
+            if command -v redis-cli >/dev/null 2>&1 && redis-cli -p 6379 ping 2>/dev/null | grep -q PONG; then
+                echo "$NAME already running (pid $oldpid)"
+                return 0
+            else
+                echo "Stale pidfile found (pid $oldpid not responding); removing"
+                rm -f "$PIDFILE"
+            fi
         else
-            rm -f $PIDFILE
+            rm -f "$PIDFILE"
+        fi
+    fi
+
+    # If another redis-server exists without pidfile, treat as stale and try graceful shutdown
+    existing_pid=$(pgrep -xo redis-server 2>/dev/null || true)
+    if [ -n "$existing_pid" ] && [ ! -f $PIDFILE ]; then
+        echo "Found running redis-server (pid $existing_pid) without pidfile; attempting graceful recycle"
+        if command -v redis-cli >/dev/null 2>&1; then
+            redis-cli -p 6379 shutdown 2>/dev/null || true
+            sleep 1
+        fi
+        if kill -0 "$existing_pid" 2>/dev/null; then
+            kill "$existing_pid" 2>/dev/null || true
+            sleep 1
         fi
     fi
     
@@ -161,9 +207,17 @@ start() {
     chown redis:redis /var/run/redis
     
     if start-stop-daemon --start --quiet --umask 007 --pidfile $PIDFILE --chuid redis:redis --exec $DAEMON -- $DAEMON_ARGS; then
-        echo "Started $DESC"
+        # Wait for pidfile + process
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+            if [ -f $PIDFILE ] && kill -0 $(cat $PIDFILE 2>/dev/null) 2>/dev/null; then
+                echo "Started $DESC (pid $(cat $PIDFILE))"
+                return 0
+            fi
+            sleep 0.5
+        done
+        echo "Start attempt timed out (no healthy pidfile)"; return 1
     else
-        echo "Failed to start $DESC"
+        echo "Failed to invoke $DAEMON"
         return 1
     fi
 }
@@ -171,17 +225,49 @@ start() {
 # Stop the service
 stop() {
     echo "Stopping $DESC..."
-    if [ ! -f $PIDFILE ]; then
-        echo "$PIDFILE does not exist, process is not running"
-        return 0
+    target_pid=""
+    if [ -f $PIDFILE ]; then
+        target_pid=$(cat $PIDFILE 2>/dev/null || true)
     fi
-    
-    if start-stop-daemon --stop --quiet --retry 30 --pidfile $PIDFILE --exec $DAEMON; then
-        rm -f $PIDFILE
-        echo "Stopped $DESC"
-    else
-        echo "Failed to stop $DESC"
+    if [ -z "$target_pid" ] || ! kill -0 "$target_pid" 2>/dev/null; then
+        # Try discovery
+        target_pid=$(pgrep -xo redis-server 2>/dev/null || true)
+        if [ -z "$target_pid" ]; then
+            echo "No running redis-server found"
+            [ -f $PIDFILE ] && rm -f $PIDFILE || true
+            return 0
+        fi
+        echo "Using discovered pid $target_pid"
+    fi
+
+    # Graceful shutdown preference
+    if command -v redis-cli >/dev/null 2>&1; then
+        redis-cli -p 6379 shutdown 2>/dev/null || true
+        sleep 1
+    fi
+    if kill -0 "$target_pid" 2>/dev/null; then
+        kill "$target_pid" 2>/dev/null || true
+    fi
+    # Wait loop
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        if kill -0 "$target_pid" 2>/dev/null; then
+            sleep 0.5
+        else
+            echo "Stopped $DESC"
+            rm -f $PIDFILE 2>/dev/null || true
+            return 0
+        fi
+    done
+    echo "Process $target_pid still alive, sending KILL"
+    kill -KILL "$target_pid" 2>/dev/null || true
+    sleep 0.5
+    if kill -0 "$target_pid" 2>/dev/null; then
+        echo "Failed to stop $DESC (pid $target_pid)"
         return 1
+    else
+        echo "Force-stopped $DESC"
+        rm -f $PIDFILE 2>/dev/null || true
+        return 0
     fi
 }
 
@@ -211,32 +297,117 @@ case "$1" in
         ;;
 esac
 
+start() {
+    echo "Starting $DESC..."
+    # Validate stale pidfile
+    if [ -f $PIDFILE ]; then
+        oldpid=$(cat $PIDFILE 2>/dev/null || true)
+        if [ -n "$oldpid" ] && kill -0 "$oldpid" 2>/dev/null; then
+            if command -v redis-cli >/dev/null 2>&1 && redis-cli -p 6379 ping 2>/dev/null | grep -q PONG; then
+                echo "$NAME already running (pid $oldpid)"; return 0
+            fi
+            echo "Stale pidfile (pid $oldpid) removing"
+        fi
+        rm -f "$PIDFILE" 2>/dev/null || true
+    fi
+
+    # Recycle existing orphan process
+    orphan=$(pgrep -xo redis-server 2>/dev/null || true)
+    if [ -n "$orphan" ]; then
+        echo "Recycling existing redis-server pid $orphan"
+        command -v redis-cli >/dev/null 2>&1 && redis-cli -p 6379 shutdown 2>/dev/null || true
+        kill "$orphan" 2>/dev/null || true
+        for i in 1 2 3 4 5; do
+            kill -0 "$orphan" 2>/dev/null && sleep 1 || break
+        done
+    fi
+
+    mkdir -p /var/run/redis; chown redis:redis /var/run/redis || true
+    # Launch (daemonize=yes from config so it should fork)
+    su -s /bin/sh -c "$DAEMON $DAEMON_ARGS" redis || { echo "Launch failed"; return 1; }
+
+    # Wait for pidfile
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        if [ -f $PIDFILE ]; then
+            npid=$(cat $PIDFILE 2>/dev/null || true)
+            if [ -n "$npid" ] && kill -0 "$npid" 2>/dev/null; then
+                echo "Started $DESC (pid $npid)"; return 0
+            fi
+        fi
+        sleep 0.5
+    done
+    echo "Failed to start (no pidfile)"; return 1
+}
+
+stop() {
+    echo "Stopping $DESC..."
+    pid=""
+    [ -f $PIDFILE ] && pid=$(cat $PIDFILE 2>/dev/null || true)
+    if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+        pid=$(pgrep -xo redis-server 2>/dev/null || true)
+    fi
+    if [ -z "$pid" ]; then
+        echo "No running redis-server"; rm -f $PIDFILE 2>/dev/null || true; return 0
+    fi
+    command -v redis-cli >/dev/null 2>&1 && redis-cli -p 6379 shutdown 2>/dev/null || true
+    kill "$pid" 2>/dev/null || true
+    for i in 1 2 3 4 5 6 7 8; do
+        kill -0 "$pid" 2>/dev/null && sleep 0.5 || { echo "Stopped $DESC"; rm -f $PIDFILE 2>/dev/null || true; return 0; }
+    done
+    echo "Sending KILL to $pid"; kill -KILL "$pid" 2>/dev/null || true
+    kill -0 "$pid" 2>/dev/null && { echo "Failed to stop $DESC"; return 1; }
+    echo "Force-stopped $DESC"; rm -f $PIDFILE 2>/dev/null || true; return 0
+}
+
+restart() { stop; sleep 1; start; }
+
+case "$1" in
+  start) start ;;
+  stop) stop ;;
+  restart) restart ;;
+  status)
+    if [ -f $PIDFILE ] && kill -0 $(cat $PIDFILE 2>/dev/null) 2>/dev/null; then
+        echo "$DESC is running (pid $(cat $PIDFILE))"; exit 0
+    else
+        echo "$DESC is NOT running"; exit 3
+    fi
+    ;;
+  *) echo "Usage: $0 {start|stop|restart|status}"; exit 2 ;;
+esac
+
 exit 0
 EOF
 
-# Set init.d script permissions
-chmod +x "/etc/init.d/redis-server"
+    chmod +x "/etc/init.d/redis-server"
+    echo "Enabling sysv service on boot..."
+    if command -v update-rc.d &> /dev/null; then
+            update-rc.d redis-server defaults
+    elif command -v chkconfig &> /dev/null; then
+            chkconfig --add redis-server
+            chkconfig redis-server on
+    else
+            echo "Warning: Cannot enable service automatically (no update-rc.d / chkconfig)"
+    fi
 
-# Enable service to start on boot
-echo "Enabling service to start on boot..."
-if command -v update-rc.d &> /dev/null; then
-    update-rc.d redis-server defaults
-elif command -v chkconfig &> /dev/null; then
-    chkconfig --add redis-server
-    chkconfig redis-server on
+    echo "Starting Redis service (sysv)..."
+    if ! service redis-server start; then
+        echo "Sysv start failed; attempting raw redis-server launch..."
+        mkdir -p /var/run/redis; chown redis:redis /var/run/redis
+        sudo -u redis /usr/bin/redis-server /etc/redis/redis.conf || true
+    fi
+    echo "Checking service status..."; sleep 2; service redis-server status || true
+    # Fallback if status reports not running but port listens check fails later
 else
-    echo "Warning: Cannot enable service to start on boot automatically"
-    echo "You may need to enable it manually for your system"
+    # systemd 环境：使用 apt 自带的 systemd unit，不再使用自定义 init 脚本
+    if [[ -f /etc/init.d/redis-server ]]; then
+        mv /etc/init.d/redis-server /etc/init.d/redis-server.disabled 2>/dev/null || true
+    fi
+    echo "Using systemd unit redis-server (daemonize=no supervised=systemd)"
+    systemctl daemon-reload || true
+    systemctl enable redis-server >/dev/null 2>&1 || true
+    systemctl restart redis-server || systemctl start redis-server || true
+    echo "Checking systemd service status..."; systemctl --no-pager status redis-server || true
 fi
-
-# Start Redis service
-echo "Starting Redis service..."
-service redis-server start
-
-# Check service status
-echo "Checking service status..."
-sleep 2  # Give the service some time to start
-service redis-server status
 
 # Check port listening status
 echo "Checking port listening status..."
@@ -273,10 +444,17 @@ echo -e "\nInstallation complete! Redis has been configured to start automatical
 echo -e "Redis configuration file: $REDIS_CONF_FILE"
 echo -e "Redis data directory: $REDIS_DIR"
 echo -e "Redis log directory: $REDIS_LOG_DIR"
-echo -e "Check service status: service redis-server status"
-echo -e "Stop service: service redis-server stop"
-echo -e "Start service: service redis-server start"
-echo -e "Restart service: service redis-server restart"
+if [[ $IS_SYSTEMD -eq 1 ]]; then
+    echo -e "Check service status: systemctl status redis-server"
+    echo -e "Stop service: systemctl stop redis-server"
+    echo -e "Start service: systemctl start redis-server"
+    echo -e "Restart service: systemctl restart redis-server"
+else
+    echo -e "Check service status: service redis-server status"
+    echo -e "Stop service: service redis-server stop (or: redis-cli -p $REDIS_PORT shutdown)"
+    echo -e "Start service: service redis-server start"
+    echo -e "Restart service: service redis-server restart"
+fi
 
 echo -e "\nYou can connect to Redis using:"
 echo "redis-cli -p $REDIS_PORT"

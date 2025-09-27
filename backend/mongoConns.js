@@ -24,33 +24,94 @@ class MongoConns {
     this.getMainDB = this.getMainDB.bind(this);
     this.getAnalyticsDB = this.getAnalyticsDB.bind(this);
 
-    this.mainDB = mongoose.createConnection(configs.get('mongoUrl'), {
+    // 调整连接参数：
+    // 1. 将 serverSelectionTimeoutMS 提高到 15000，避免副本集刚启动选举时出现大量 "Server selection timed out after 5000 ms" 噪音。
+    // 2. 增加 connectTimeoutMS 作为 TCP 连接建立上限，防止某些网络场景长期阻塞。
+    // 3. 仍然强制 IPv4 以避免 ::1 / 解析差异导致的额外重试。
+    const commonConnOptions = {
       useNewUrlParser: true,
-      useCreateIndex: true
-    });
-    this.mainDB.then((db) => {
-      logger.info('Connected to MongoDB mainDB');
-    }, (err) => { logger.error('Failed to connect to mainDB', { params: { err: err.message } }); });
+      useCreateIndex: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 15000,
+      // 提高 connectTimeoutMS，避免冷启动阶段 TCP 握手慢导致早期 "connection timed out" 日志
+      connectTimeoutMS: 15000,
+      family: 4 // Force IPv4
+    };
 
-    this.analyticsDB = mongoose.createConnection(configs.get('mongoAnalyticsUrl'), {
-      useNewUrlParser: true,
-      useCreateIndex: true
-    });
-    this.analyticsDB.then((db) => {
-      logger.info('Connected to MongoDB analyticsDB');
-    }, (err) => {
-      logger.error('Failed to connect to analyticsDB', { params: { err: err.message } });
+    // 连接初始宽限期：在副本集刚刚启动时，可能需要几秒完成 PRIMARY 选举。
+    // 在宽限期内首次失败只打 warn 而不是 error，降低日志噪音；超过宽限期再按 error。
+    const INITIAL_CONNECT_GRACE_MS = parseInt(process.env.MONGO_INITIAL_GRACE_MS || '20000', 10);
+    const startTs = Date.now();
+    const firstFailure = { mainDB: false, analyticsDB: false, vpnDB: false };
+
+    const mainUri = configs.get('mongoUrl');
+    this.mainDB = mongoose.createConnection(mainUri, commonConnOptions);
+    this._attachConnEvents(this.mainDB, 'mainDB', mainUri);
+    this.mainDB.catch(err => {
+      const withinGrace = (Date.now() - startTs) < INITIAL_CONNECT_GRACE_MS;
+      if (!firstFailure.mainDB) {
+        firstFailure.mainDB = true;
+        logger.warn('Initial mainDB connect failed (first failure, will retry)', { params: { err: err.message } });
+      } else {
+        const logFn = withinGrace ? logger.warn : logger.error;
+        logFn(`Initial mainDB connect failed${withinGrace ? ' (grace period, likely election)' : ''}`, { params: { err: err.message } });
+      }
+      this._retryOpen(this.mainDB, mainUri, 'mainDB');
     });
 
-    this.vpnDB = mongoose.createConnection(configs.get('mongoVpnUrl'), {
-      useNewUrlParser: true,
-      useCreateIndex: true
+    const analyticsUri = configs.get('mongoAnalyticsUrl');
+    this.analyticsDB = mongoose.createConnection(analyticsUri, commonConnOptions);
+    this._attachConnEvents(this.analyticsDB, 'analyticsDB', analyticsUri);
+    this.analyticsDB.catch(err => {
+      const withinGrace = (Date.now() - startTs) < INITIAL_CONNECT_GRACE_MS;
+      if (!firstFailure.analyticsDB) {
+        firstFailure.analyticsDB = true;
+        logger.warn('Initial analyticsDB connect failed (first failure, will retry)', { params: { err: err.message } });
+      } else {
+        const logFn = withinGrace ? logger.warn : logger.error;
+        logFn(`Initial analyticsDB connect failed${withinGrace ? ' (grace period, likely election)' : ''}`, { params: { err: err.message } });
+      }
+      this._retryOpen(this.analyticsDB, analyticsUri, 'analyticsDB');
     });
-    this.vpnDB.then((db) => {
-      logger.info('Connected to MongoDB vpnDB');
-    }, (err) => {
-      logger.error('Failed to connect to vpnDB', { params: { err: err.message } });
+
+    const vpnUri = configs.get('mongoVpnUrl');
+    this.vpnDB = mongoose.createConnection(vpnUri, commonConnOptions);
+    this._attachConnEvents(this.vpnDB, 'vpnDB', vpnUri);
+    this.vpnDB.catch(err => {
+      const withinGrace = (Date.now() - startTs) < INITIAL_CONNECT_GRACE_MS;
+      if (!firstFailure.vpnDB) {
+        firstFailure.vpnDB = true;
+        logger.warn('Initial vpnDB connect failed (first failure, will retry)', { params: { err: err.message } });
+      } else {
+        const logFn = withinGrace ? logger.warn : logger.error;
+        logFn(`Initial vpnDB connect failed${withinGrace ? ' (grace period, likely election)' : ''}`, { params: { err: err.message } });
+      }
+      this._retryOpen(this.vpnDB, vpnUri, 'vpnDB');
     });
+  }
+
+  _attachConnEvents (conn, name, uri) {
+    conn.on('connected', () => logger.info(`Connected to MongoDB ${name}`, { params: { uri: this._redact(uri) } }));
+    conn.on('error', err => logger.error(`MongoDB ${name} error`, { params: { err: err.message } }));
+    conn.on('disconnected', () => logger.warn(`MongoDB ${name} disconnected`));
+    conn.on('reconnected', () => logger.info(`MongoDB ${name} reconnected`));
+  }
+
+  _retryOpen (conn, uri, name, attempt = 1) {
+    const maxAttempts = 5;
+    const delay = Math.min(5000, 500 * attempt);
+    if (attempt > maxAttempts) {
+      logger.error(`MongoDB ${name} giving up after ${maxAttempts} attempts`);
+      return;
+    }
+    setTimeout(() => {
+      logger.info(`Retrying MongoDB ${name} connection (attempt ${attempt})`);
+      conn.openUri(uri).catch(() => this._retryOpen(conn, uri, name, attempt + 1));
+    }, delay);
+  }
+
+  _redact (uri) {
+    return uri.replace(/:\/\/(.*)@/, '://***:***@');
   }
 
   getMainDB () {

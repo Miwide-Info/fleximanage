@@ -23,7 +23,8 @@
  ****************************************************************************/
 /* eslint-disable max-len */
 const os = require('os');
-const hostname = 'localhost';
+// Use 127.0.0.1 instead of 'localhost' to avoid cases where localhost resolves to ::1 (IPv6) while mongod listens only on IPv4
+const hostname = process.env.MONGO_HOST || '127.0.0.1';
 const configEnv = {
   // This is the default configuration, override by the following sections
   default: {

@@ -138,16 +138,17 @@ router.route('/register')
       .then((account) => {
         registerAccount = account[0];
         const validateKey = randomKey(30);
+        const FAST_VERIFY = process.env.DEV_FAST_VERIFY === 'true';
         registerUser = new User({
           username: req.body.email,
           name: req.body.userFirstName,
           lastName: req.body.userLastName,
           email: req.body.email,
-          jobTitle: req.body.userJobTitle,
+            jobTitle: req.body.userJobTitle,
           phoneNumber: req.body.userPhoneNumber,
           admin: false,
-          state: 'unverified',
-          emailTokens: { verify: validateKey, invite: '', resetPassword: '' },
+          state: FAST_VERIFY ? 'verified' : 'unverified',
+          emailTokens: { verify: FAST_VERIFY ? '' : validateKey, invite: '', resetPassword: '' },
           defaultAccount: registerAccount._id,
           defaultOrg: null
         });
@@ -173,19 +174,17 @@ router.route('/register')
         return membership.create([mem], { session: session });
       })
       .then(() => {
+        // Skip sending verification mail in fast dev mode
+        if (registerUser.state === 'verified') return Promise.resolve(true);
         const uiServerUrl = getUiServerUrl(req);
-        const p = mailer.sendMailHTML(
+        return mailer.sendMailHTML(
           configs.get('mailerEnvelopeFromAddress'),
           configs.get('mailerFromAddress'),
           req.body.email,
           `Verify Your ${configs.get('companyName')} Account`,
           `<h2>Thank you for joining ${configs.get('companyName')}</h2>
             <b>Click below to verify your account:</b>
-            <p><a href="${uiServerUrl}/verify-account?id=${
-              registerUser._id
-          }&t=${
-            registerUser.emailTokens.verify
-          }"><button style="color:#fff;background-color:#F99E5B;
+            <p><a href="${uiServerUrl}/verify-account?id=${registerUser._id}&t=${registerUser.emailTokens.verify}"><button style="color:#fff;background-color:#F99E5B;
             border-color:#F99E5B;font-weight:400;text-align:center;
             vertical-align:middle;border:1px solid transparent;
             padding:.375rem .75rem;font-size:1rem;line-height:1.5;
@@ -193,7 +192,6 @@ router.route('/register')
             cursor:pointer">Verify Account</button></a></p>
             <p>Your friends @ ${configs.get('companyName')}</p>`
         );
-        return p;
       })
       .then(() => {
         return session.commitTransaction();
@@ -227,7 +225,7 @@ router.route('/register')
         return Promise.resolve(true);
       })
       .then(() => {
-        return res.status(200).json({ status: 'user registered' });
+        return res.status(200).json({ status: 'user registered', fastVerified: registerUser.state === 'verified' });
       })
       .catch(async (err) => {
         if (session) session.abortTransaction();
@@ -639,7 +637,8 @@ const sendJwtToken = async (req, res, mfaVerified) => {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Refresh-JWT', token);
   res.setHeader('refresh-token', refreshToken);
-  res.json({ name: req.user.name, status: 'logged in' });
+  // Also return tokens in body so frontend can consume even if headers are stripped by proxy
+  res.json({ name: req.user.name, status: 'logged in', token, refreshToken, mfaVerified });
 };
 
 router.route('/mfa/generateRecoveryCodes')

@@ -95,6 +95,7 @@ class ExpressServer {
     this.onListening = this.onListening.bind(this);
     this.launch = this.launch.bind(this);
     this.close = this.close.bind(this);
+  this.httpsEnabled = false; // will flip true only if certs loaded & server created
 
     this.setupMiddleware();
   }
@@ -145,17 +146,17 @@ class ExpressServer {
     statusesInDb.start();
     releasePendingTunnels.start();
 
-    // Secure traffic only
+    // HTTPS redirect only if configured AND https server actually initialized
     this.app.all('*', (req, res, next) => {
-      // Allow Let's encrypt certbot to access its certificate dirctory
-      if (!configs.get('shouldRedirectHttps', 'boolean') ||
-          req.secure || req.url.startsWith('/.well-known/acme-challenge')) {
+      const redirectDesired = configs.get('shouldRedirectHttps', 'boolean');
+      // 豁免条件：
+      // 1. 预检 OPTIONS
+      // 2. API 调用 (req.url 以 /api/ 开头) —— 避免 axios/fetch 在 307 + 跨 scheme 时出现循环 / 中断
+      if (req.method === 'OPTIONS' || req.url.startsWith('/api/')) return next();
+      if (!redirectDesired || !this.httpsEnabled || req.secure || req.url.startsWith('/.well-known/acme-challenge')) {
         return next();
-      } else {
-        return res.redirect(
-          307, 'https://' + req.hostname + ':' + configs.get('redirectHttpsPort') + req.url
-        );
       }
+      return res.redirect(307, 'https://' + req.hostname + ':' + configs.get('redirectHttpsPort') + req.url);
     });
 
     // Global rate limiter to protect against DoS attacks
@@ -198,17 +199,19 @@ class ExpressServer {
     this.app.get('/', (req, res) => this.sendIndexFile(req, res));
     this.app.use(express.static(path.join(__dirname, configs.get('clientStaticDir'))));
 
-    // Secure traffic only
+    // Explicit favicon handler to avoid noisy "Route not found" logs when browser auto-requests it
+    this.app.get('/favicon.ico', (req, res) => {
+      // If you later add an actual favicon file, you can serve it here instead of a 204.
+      res.status(204).end();
+    });
+
     this.app.all('*', (req, res, next) => {
-      // Allow Let's encrypt certbot to access its certificate dirctory
-      if (!configs.get('shouldRedirectHttps', 'boolean') ||
-          req.secure || req.url.startsWith('/.well-known/acme-challenge')) {
+      const redirectDesired = configs.get('shouldRedirectHttps', 'boolean');
+      if (req.method === 'OPTIONS' || req.url.startsWith('/api/')) return next();
+      if (!redirectDesired || !this.httpsEnabled || req.secure || req.url.startsWith('/.well-known/acme-challenge')) {
         return next();
-      } else {
-        return res.redirect(
-          307, 'https://' + req.hostname + ':' + configs.get('redirectHttpsPort') + req.url
-        );
       }
+      return res.redirect(307, 'https://' + req.hostname + ':' + configs.get('redirectHttpsPort') + req.url);
     });
 
     // no authentication
@@ -397,6 +400,7 @@ class ExpressServer {
             cert: fs.readFileSync(certPath)
           };
           this.secureServer = https.createServer(this.options, this.app);
+          this.httpsEnabled = true;
         } catch (certErr) {
           console.error('[HTTPS] Failed to load certificate files', { message: certErr.message });
           // Fallback: continue with HTTP only rather than crashing whole process
@@ -404,8 +408,19 @@ class ExpressServer {
       }
 
       // setup wss here
+      // Previous logic selected secureServer purely based on the config flag. If the flag was true
+      // but certificate loading failed (leaving secureServer undefined), WebSocket.Server received
+      // an options object without a valid 'server' / 'port' / 'noServer' property and threw:
+      //   "One of the \"port\", \"server\", or \"noServer\" options must be specified"
+      // We now only choose the secure server if it actually exists (httpsEnabled=true), otherwise
+      // we transparently fall back to the HTTP server.
+      const wantHttps = configs.get('shouldRedirectHttps', 'boolean');
+      const wsUnderlyingServer = (wantHttps && this.httpsEnabled) ? this.secureServer : this.server;
+      if (wantHttps && !this.httpsEnabled) {
+        console.warn('[HTTPS] WebSocket fallback: HTTPS requested but secure server not initialized (cert load failed). Using HTTP server for WS.');
+      }
       this.wss = new WebSocket.Server({
-        server: configs.get('shouldRedirectHttps', 'boolean') ? this.secureServer : this.server,
+        server: wsUnderlyingServer,
         verifyClient: connections.verifyDevice
       });
 

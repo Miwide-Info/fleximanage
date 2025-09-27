@@ -18,7 +18,8 @@
 'use strict';
 
 const os = require('os');
-const hostname = 'localhost';
+// Prefer explicit MONGO_HOST (aligned with main server configs) to avoid IPv6 ::1 resolution issues
+const hostname = process.env.MONGO_HOST || '127.0.0.1';
 
 var mongo = {
   // setting the connection string will only give access to that database

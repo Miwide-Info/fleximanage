@@ -12,7 +12,7 @@ GROUP="aiosmtpd"
 PORT="1025"
 INSTALL_DIR="/opt/aiosmtpd_server"
 VENV_DIR="$INSTALL_DIR/venv"
-LOG_DIR="/var/log/aiosmtpd"
+LOG_DIR="/fleximanage/logs"
 SCRIPT_NAME="aiosmtpd_server.py"
 
 # Check if running as root
@@ -73,6 +73,7 @@ Listening on port 1025, running as a system service
 
 import asyncio
 import logging
+import socket
 from aiosmtpd.controller import Controller
 
 # Configure logging
@@ -175,11 +176,30 @@ start() {
 # Stop the service
 stop() {
     echo "Stopping \$NAME..."
-    start-stop-daemon --stop --pidfile \$PIDFILE \\
-        --user \$USER \\
-        --retry 5
+    if ! start-stop-daemon --stop --quiet --pidfile \$PIDFILE --user \$USER --retry 5; then
+        log_daemon_msg "PID file not found or process dead, searching by name..."
+        local pids
+        pids=\$(pgrep -f "\$SCRIPT" -u "\$USER")
+        if [ -n "\$pids" ]; then
+            log_daemon_msg "Found running process(es) with PID(s): \$pids. Terminating..."
+            kill \$pids
+            # Wait for process to die
+            for i in {1..10}; do
+                if ! pgrep -f "\$SCRIPT" -u "\$USER" > /dev/null; then
+                    break
+                fi
+                sleep 0.5
+            done
+            if pgrep -f "\$SCRIPT" -u "\$USER" > /dev/null; then
+                log_daemon_msg "Process did not terminate gracefully, sending KILL..."
+                kill -9 \$pids
+            fi
+        else
+            log_daemon_msg "No running process found."
+        fi
+    fi
     rm -f \$PIDFILE
-    echo "Service \$NAME stopped"
+    log_end_msg 0
 }
 
 # Restart the service

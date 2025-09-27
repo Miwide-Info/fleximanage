@@ -1,0 +1,526 @@
+]633;E;date;a5363917-e615-4cad-bf16-126559229151]633;CSun Sep 28 01:54:06 CST 2025
+== PROCESSES ==
+84494 /opt/mongodb-current/bin/mongod --port=27017 --dbpath=/data/db27017 --replSet=rs --bind_ip_all --wiredTigerCacheSizeGB 0.25 --fork --logpath=/var/log/mongodb/mongod-27017.log
+84551 /opt/mongodb-current/bin/mongod --port=27018 --dbpath=/data/db27018 --replSet=rs --bind_ip_all --wiredTigerCacheSizeGB 0.25 --fork --logpath=/var/log/mongodb/mongod-27018.log
+84616 /opt/mongodb-current/bin/mongod --port=27019 --dbpath=/data/db27019 --replSet=rs --bind_ip_all --wiredTigerCacheSizeGB 0.25 --fork --logpath=/var/log/mongodb/mongod-27019.log
+== LOG 27017 ==
+2025-09-28T01:50:29.590+0800 I NETWORK  [conn58] end connection 127.0.0.1:47672 (6 connections now open)
+2025-09-28T01:50:31.696+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:47684 #59 (7 connections now open)
+2025-09-28T01:50:31.698+0800 I NETWORK  [conn59] received client metadata from 127.0.0.1:47684 conn59: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:31.704+0800 I NETWORK  [conn59] end connection 127.0.0.1:47684 (6 connections now open)
+2025-09-28T01:50:33.836+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:47700 #60 (7 connections now open)
+2025-09-28T01:50:33.837+0800 I NETWORK  [conn60] received client metadata from 127.0.0.1:47700 conn60: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:33.841+0800 I NETWORK  [conn60] end connection 127.0.0.1:47700 (6 connections now open)
+2025-09-28T01:50:35.974+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:47712 #61 (7 connections now open)
+2025-09-28T01:50:35.974+0800 I NETWORK  [conn61] received client metadata from 127.0.0.1:47712 conn61: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:35.979+0800 I NETWORK  [conn61] end connection 127.0.0.1:47712 (6 connections now open)
+2025-09-28T01:50:38.104+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:49876 #62 (7 connections now open)
+2025-09-28T01:50:38.105+0800 I NETWORK  [conn62] received client metadata from 127.0.0.1:49876 conn62: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:38.109+0800 I NETWORK  [conn62] end connection 127.0.0.1:49876 (6 connections now open)
+2025-09-28T01:50:40.235+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:49892 #63 (7 connections now open)
+2025-09-28T01:50:40.235+0800 I NETWORK  [conn63] received client metadata from 127.0.0.1:49892 conn63: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:40.240+0800 I NETWORK  [conn63] end connection 127.0.0.1:49892 (6 connections now open)
+2025-09-28T01:50:42.346+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:49896 #64 (7 connections now open)
+2025-09-28T01:50:42.346+0800 I NETWORK  [conn64] received client metadata from 127.0.0.1:49896 conn64: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:42.351+0800 I NETWORK  [conn64] end connection 127.0.0.1:49896 (6 connections now open)
+2025-09-28T01:50:44.571+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:49906 #65 (7 connections now open)
+2025-09-28T01:50:44.572+0800 I NETWORK  [conn65] received client metadata from 127.0.0.1:49906 conn65: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:44.587+0800 I NETWORK  [conn65] end connection 127.0.0.1:49906 (6 connections now open)
+2025-09-28T01:50:46.724+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:49922 #66 (7 connections now open)
+2025-09-28T01:50:46.735+0800 I NETWORK  [conn66] received client metadata from 127.0.0.1:49922 conn66: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:46.746+0800 I NETWORK  [conn66] end connection 127.0.0.1:49922 (6 connections now open)
+2025-09-28T01:50:48.840+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:47254 #67 (7 connections now open)
+2025-09-28T01:50:48.841+0800 I NETWORK  [conn67] received client metadata from 127.0.0.1:47254 conn67: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:48.846+0800 I NETWORK  [conn67] end connection 127.0.0.1:47254 (6 connections now open)
+2025-09-28T01:50:50.959+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:47268 #68 (7 connections now open)
+2025-09-28T01:50:50.960+0800 I NETWORK  [conn68] received client metadata from 127.0.0.1:47268 conn68: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:50.966+0800 I NETWORK  [conn68] end connection 127.0.0.1:47268 (6 connections now open)
+2025-09-28T01:50:53.088+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:47280 #69 (7 connections now open)
+2025-09-28T01:50:53.088+0800 I NETWORK  [conn69] received client metadata from 127.0.0.1:47280 conn69: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:53.094+0800 I NETWORK  [conn69] end connection 127.0.0.1:47280 (6 connections now open)
+2025-09-28T01:50:55.233+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:47286 #70 (7 connections now open)
+2025-09-28T01:50:55.234+0800 I NETWORK  [conn70] received client metadata from 127.0.0.1:47286 conn70: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:55.238+0800 I NETWORK  [conn70] end connection 127.0.0.1:47286 (6 connections now open)
+2025-09-28T01:50:57.342+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:47298 #71 (7 connections now open)
+2025-09-28T01:50:57.342+0800 I NETWORK  [conn71] received client metadata from 127.0.0.1:47298 conn71: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:57.348+0800 I NETWORK  [conn71] end connection 127.0.0.1:47298 (6 connections now open)
+2025-09-28T01:50:59.485+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:39718 #72 (7 connections now open)
+2025-09-28T01:50:59.487+0800 I NETWORK  [conn72] received client metadata from 127.0.0.1:39718 conn72: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:50:59.491+0800 I NETWORK  [conn72] end connection 127.0.0.1:39718 (6 connections now open)
+2025-09-28T01:51:01.595+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:39720 #73 (7 connections now open)
+2025-09-28T01:51:01.595+0800 I NETWORK  [conn73] received client metadata from 127.0.0.1:39720 conn73: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:51:01.601+0800 I NETWORK  [conn73] end connection 127.0.0.1:39720 (6 connections now open)
+2025-09-28T01:51:03.721+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:39732 #74 (7 connections now open)
+2025-09-28T01:51:03.721+0800 I NETWORK  [conn74] received client metadata from 127.0.0.1:39732 conn74: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:51:03.726+0800 I NETWORK  [conn74] end connection 127.0.0.1:39732 (6 connections now open)
+2025-09-28T01:51:05.835+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:39748 #75 (7 connections now open)
+2025-09-28T01:51:05.836+0800 I NETWORK  [conn75] received client metadata from 127.0.0.1:39748 conn75: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:51:05.841+0800 I NETWORK  [conn75] end connection 127.0.0.1:39748 (6 connections now open)
+2025-09-28T01:51:07.943+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:40162 #76 (7 connections now open)
+2025-09-28T01:51:07.943+0800 I NETWORK  [conn76] received client metadata from 127.0.0.1:40162 conn76: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:51:07.948+0800 I NETWORK  [conn76] end connection 127.0.0.1:40162 (6 connections now open)
+2025-09-28T01:53:31.208+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:48818 #77 (7 connections now open)
+2025-09-28T01:53:31.209+0800 I NETWORK  [conn77] received client metadata from 127.0.0.1:48818 conn77: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:31.217+0800 I NETWORK  [conn77] end connection 127.0.0.1:48818 (6 connections now open)
+2025-09-28T01:53:31.303+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:48824 #78 (7 connections now open)
+2025-09-28T01:53:31.303+0800 I NETWORK  [conn78] received client metadata from 127.0.0.1:48824 conn78: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:31.308+0800 I NETWORK  [conn78] end connection 127.0.0.1:48824 (6 connections now open)
+2025-09-28T01:53:31.386+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:48826 #79 (7 connections now open)
+2025-09-28T01:53:31.387+0800 I NETWORK  [conn79] received client metadata from 127.0.0.1:48826 conn79: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:31.392+0800 I NETWORK  [conn79] end connection 127.0.0.1:48826 (6 connections now open)
+2025-09-28T01:53:31.473+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:48836 #80 (7 connections now open)
+2025-09-28T01:53:31.473+0800 I NETWORK  [conn80] received client metadata from 127.0.0.1:48836 conn80: { application: { name: "MongoDB Shell" }, driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:31.477+0800 I NETWORK  [conn80] end connection 127.0.0.1:48836 (6 connections now open)
+2025-09-28T01:53:50.191+0800 I CONTROL  [LogicalSessionCacheReap] Sessions collection is not set up; waiting until next sessions reap interval: config.system.sessions does not exist
+2025-09-28T01:53:50.191+0800 I STORAGE  [LogicalSessionCacheRefresh] createCollection: config.system.sessions with generated UUID: 8dd257e4-688f-4e08-a6ef-a0c7e8e671a9
+2025-09-28T01:53:50.241+0800 I INDEX    [LogicalSessionCacheRefresh] build index on: config.system.sessions properties: { v: 2, key: { lastUse: 1 }, name: "lsidTTLIndex", ns: "config.system.sessions", expireAfterSeconds: 1800 }
+2025-09-28T01:53:50.241+0800 I INDEX    [LogicalSessionCacheRefresh] 	 building index using bulk method; build may temporarily use up to 500 megabytes of RAM
+2025-09-28T01:53:50.243+0800 I INDEX    [LogicalSessionCacheRefresh] build index done.  scanned 0 total records. 0 secs
+2025-09-28T01:53:51.910+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:34750 #81 (7 connections now open)
+2025-09-28T01:53:51.910+0800 I NETWORK  [conn81] received client metadata from 127.0.0.1:34750 conn81: { driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:51.924+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:34766 #82 (8 connections now open)
+2025-09-28T01:53:51.924+0800 I NETWORK  [conn82] received client metadata from 127.0.0.1:34766 conn82: { driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:53.675+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:34782 #83 (9 connections now open)
+2025-09-28T01:53:53.675+0800 I NETWORK  [conn83] received client metadata from 127.0.0.1:34782 conn83: { driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:53.695+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:34784 #84 (10 connections now open)
+2025-09-28T01:53:53.696+0800 I NETWORK  [conn84] received client metadata from 127.0.0.1:34784 conn84: { driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+== LOG 27018 ==
+2025-09-28T01:49:02.801+0800 I NETWORK  [conn1] end connection 127.0.0.1:34506 (0 connections now open)
+2025-09-28T01:49:02.811+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:34522 #2 (1 connection now open)
+2025-09-28T01:49:02.812+0800 I NETWORK  [conn2] received client metadata from 127.0.0.1:34522 conn2: { driver: { name: "NetworkInterfaceTL", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:49:02.813+0800 I ASIO     [Replication] Connecting to 127.0.0.1:27017
+2025-09-28T01:49:04.817+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:34528 #6 (2 connections now open)
+2025-09-28T01:49:04.818+0800 I STORAGE  [replexec-0] createCollection: local.system.replset with generated UUID: 27ff33f6-800f-435e-95fb-f0abe023068f
+2025-09-28T01:49:04.818+0800 I NETWORK  [conn6] end connection 127.0.0.1:34528 (1 connection now open)
+2025-09-28T01:49:04.833+0800 I REPL     [replexec-0] New replica set config in use: { _id: "rs", version: 1, protocolVersion: 1, writeConcernMajorityJournalDefault: true, members: [ { _id: 0, host: "127.0.0.1:27017", arbiterOnly: false, buildIndexes: true, hidden: false, priority: 1.0, tags: {}, slaveDelay: 0, votes: 1 }, { _id: 1, host: "127.0.0.1:27018", arbiterOnly: false, buildIndexes: true, hidden: false, priority: 1.0, tags: {}, slaveDelay: 0, votes: 1 }, { _id: 2, host: "127.0.0.1:27019", arbiterOnly: false, buildIndexes: true, hidden: false, priority: 1.0, tags: {}, slaveDelay: 0, votes: 1 } ], settings: { chainingAllowed: true, heartbeatIntervalMillis: 2000, heartbeatTimeoutSecs: 10, electionTimeoutMillis: 10000, catchUpTimeoutMillis: -1, catchUpTakeoverDelayMillis: 30000, getLastErrorModes: {}, getLastErrorDefaults: { w: 1, wtimeout: 0 }, replicaSetId: ObjectId('68d8238e0de10726a006c1e4') } }
+2025-09-28T01:49:04.833+0800 I REPL     [replexec-0] This node is 127.0.0.1:27018 in the config
+2025-09-28T01:49:04.833+0800 I REPL     [replexec-0] transition to STARTUP2 from STARTUP
+2025-09-28T01:49:04.834+0800 I REPL     [replexec-0] Starting replication storage threads
+2025-09-28T01:49:04.834+0800 I ASIO     [Replication] Connecting to 127.0.0.1:27019
+2025-09-28T01:49:04.834+0800 I REPL     [replexec-3] Member 127.0.0.1:27017 is now in state SECONDARY
+2025-09-28T01:49:04.835+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:34536 #8 (2 connections now open)
+2025-09-28T01:49:04.835+0800 I NETWORK  [conn8] received client metadata from 127.0.0.1:34536 conn8: { driver: { name: "NetworkInterfaceTL", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:49:04.836+0800 I REPL     [replexec-2] Member 127.0.0.1:27019 is now in state STARTUP2
+2025-09-28T01:49:04.836+0800 I STORAGE  [replexec-0] createCollection: local.temp_oplog_buffer with generated UUID: a23fbd64-6bc2-43a9-b215-390c92f814f8
+2025-09-28T01:49:04.851+0800 I REPL     [replication-0] Starting initial sync (attempt 1 of 10)
+2025-09-28T01:49:04.851+0800 I STORAGE  [replication-0] Finishing collection drop for local.temp_oplog_buffer (a23fbd64-6bc2-43a9-b215-390c92f814f8).
+2025-09-28T01:49:04.854+0800 I STORAGE  [replication-0] createCollection: local.temp_oplog_buffer with generated UUID: 81c5a436-04d1-4881-9193-38b5ad608c5d
+2025-09-28T01:49:04.874+0800 I REPL     [replication-0] sync source candidate: 127.0.0.1:27017
+2025-09-28T01:49:04.874+0800 I REPL     [replication-0] Initial syncer oplog truncation finished in: 0ms
+2025-09-28T01:49:04.874+0800 I REPL     [replication-0] ******
+2025-09-28T01:49:04.874+0800 I REPL     [replication-0] creating replication oplog of size: 45310MB...
+2025-09-28T01:49:04.874+0800 I STORAGE  [replication-0] createCollection: local.oplog.rs with generated UUID: 6a18f346-7255-474e-a3f0-cb0a7ae56108
+2025-09-28T01:49:04.882+0800 I STORAGE  [replication-0] Starting OplogTruncaterThread local.oplog.rs
+2025-09-28T01:49:04.882+0800 I STORAGE  [replication-0] The size storer reports that the oplog contains 0 records totaling to 0 bytes
+2025-09-28T01:49:04.882+0800 I STORAGE  [replication-0] Scanning the oplog to determine where to place markers for truncation
+2025-09-28T01:49:04.923+0800 I REPL     [replication-0] ******
+2025-09-28T01:49:04.923+0800 I STORAGE  [replication-0] dropAllDatabasesExceptLocal 1
+2025-09-28T01:49:04.924+0800 I ASIO     [RS] Connecting to 127.0.0.1:27017
+2025-09-28T01:49:04.926+0800 I ASIO     [RS] Connecting to 127.0.0.1:27017
+2025-09-28T01:49:04.927+0800 I REPL     [replication-1] CollectionCloner::start called, on ns:admin.system.version
+2025-09-28T01:49:04.928+0800 I STORAGE  [repl writer worker 15] createCollection: admin.system.version with provided UUID: 1fc5349d-4ba3-4311-badc-c94233ba1e96
+2025-09-28T01:49:04.941+0800 I INDEX    [repl writer worker 15] build index on: admin.system.version properties: { v: 2, key: { _id: 1 }, name: "_id_", ns: "admin.system.version" }
+2025-09-28T01:49:04.941+0800 I INDEX    [repl writer worker 15] 	 building index using bulk method; build may temporarily use up to 500 megabytes of RAM
+2025-09-28T01:49:04.943+0800 I COMMAND  [repl writer worker 1] setting featureCompatibilityVersion to 4.0
+2025-09-28T01:49:04.943+0800 I NETWORK  [repl writer worker 1] Skip closing connection for connection # 8
+2025-09-28T01:49:04.943+0800 I NETWORK  [repl writer worker 1] Skip closing connection for connection # 2
+2025-09-28T01:49:04.943+0800 I REPL     [repl writer worker 1] CollectionCloner ns:admin.system.version finished cloning with status: OK
+2025-09-28T01:49:04.946+0800 I REPL     [repl writer worker 1] Finished cloning data: OK. Beginning oplog replay.
+2025-09-28T01:49:04.947+0800 I REPL     [replication-0] No need to apply operations. (currently at { : Timestamp(1758995342, 1) })
+2025-09-28T01:49:04.947+0800 I REPL     [replication-1] Finished fetching oplog during initial sync: CallbackCanceled: error in fetcher batch callback: oplog fetcher is shutting down. Last fetched optime and hash: { ts: Timestamp(0, 0), t: -1 }[0]
+2025-09-28T01:49:04.947+0800 I REPL     [replication-1] Initial sync attempt finishing up.
+2025-09-28T01:49:04.947+0800 I REPL     [replication-1] Initial Sync Attempt Statistics: { failedInitialSyncAttempts: 0, maxFailedInitialSyncAttempts: 10, initialSyncStart: new Date(1758995344851), initialSyncAttempts: [], fetchedMissingDocs: 0, appliedOps: 0, initialSyncOplogStart: Timestamp(1758995342, 1), initialSyncOplogEnd: Timestamp(1758995342, 1), databases: { databasesCloned: 1, admin: { collections: 1, clonedCollections: 1, start: new Date(1758995344926), end: new Date(1758995344946), elapsedMillis: 20, admin.system.version: { documentsToCopy: 1, documentsCopied: 1, indexes: 1, fetchedBatches: 1, start: new Date(1758995344927), end: new Date(1758995344946), elapsedMillis: 19 } } } }
+2025-09-28T01:49:04.947+0800 I STORAGE  [replication-1] Finishing collection drop for local.temp_oplog_buffer (81c5a436-04d1-4881-9193-38b5ad608c5d).
+2025-09-28T01:49:04.950+0800 I REPL     [replication-1] initial sync done; took 0s.
+2025-09-28T01:49:04.950+0800 I REPL     [replication-1] transition to RECOVERING from STARTUP2
+2025-09-28T01:49:04.950+0800 I REPL     [replication-1] Starting replication fetcher thread
+2025-09-28T01:49:04.950+0800 I REPL     [replication-1] Starting replication applier thread
+2025-09-28T01:49:04.950+0800 I REPL     [replication-1] Starting replication reporter thread
+2025-09-28T01:49:04.950+0800 I REPL     [rsSync-0] Starting oplog application
+2025-09-28T01:49:04.951+0800 I REPL     [rsBackgroundSync] could not find member to sync from
+2025-09-28T01:49:04.951+0800 I REPL     [rsSync-0] transition to SECONDARY from RECOVERING
+2025-09-28T01:49:04.951+0800 I REPL     [rsSync-0] Resetting sync source to empty, which was :27017
+2025-09-28T01:49:05.453+0800 I REPL     [replexec-4] Member 127.0.0.1:27019 is now in state SECONDARY
+2025-09-28T01:49:14.082+0800 I STORAGE  [conn2] createCollection: local.replset.election with generated UUID: efdcc5dd-3008-4bba-bec5-0e2ba3dc932c
+2025-09-28T01:49:14.471+0800 I REPL     [replexec-3] Member 127.0.0.1:27017 is now in state PRIMARY
+2025-09-28T01:49:14.926+0800 I CONNPOOL [RS] Ending connection to host 127.0.0.1:27017 due to bad connection status; 1 connections to that host remain open
+2025-09-28T01:49:16.956+0800 I REPL     [rsBackgroundSync] sync source candidate: 127.0.0.1:27017
+2025-09-28T01:49:16.957+0800 I REPL     [rsBackgroundSync] Changed sync source from empty to 127.0.0.1:27017
+2025-09-28T01:49:16.957+0800 I ASIO     [RS] Connecting to 127.0.0.1:27017
+2025-09-28T01:49:16.959+0800 I STORAGE  [repl writer worker 3] createCollection: config.transactions with provided UUID: 32137e6a-1b25-40f6-aab4-6a30b8e2aa2a
+2025-09-28T01:49:16.992+0800 I STORAGE  [repl writer worker 5] createCollection: admin.system.keys with provided UUID: d9d6fd58-60a2-415c-980a-c557f7acc2ea
+2025-09-28T01:49:17.030+0800 I STORAGE  [replication-0] Triggering the first stable checkpoint. Initial Data: Timestamp(1758995342, 1) PrevStable: Timestamp(0, 0) CurrStable: Timestamp(1758995355, 4)
+2025-09-28T01:53:50.233+0800 I STORAGE  [repl writer worker 1] createCollection: config.system.sessions with provided UUID: 8dd257e4-688f-4e08-a6ef-a0c7e8e671a9
+2025-09-28T01:53:50.272+0800 I INDEX    [repl writer worker 3] build index on: config.system.sessions properties: { v: 2, key: { lastUse: 1 }, name: "lsidTTLIndex", expireAfterSeconds: 1800, ns: "config.system.sessions" }
+2025-09-28T01:53:50.272+0800 I INDEX    [repl writer worker 3] 	 building index using bulk method; build may temporarily use up to 500 megabytes of RAM
+2025-09-28T01:53:50.274+0800 I INDEX    [repl writer worker 3] build index done.  scanned 0 total records. 0 secs
+2025-09-28T01:53:51.908+0800 I NETWORK  [LogicalSessionCacheRefresh] Starting new replica set monitor for rs/127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019
+2025-09-28T01:53:51.908+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:48404 #13 (3 connections now open)
+2025-09-28T01:53:51.909+0800 I NETWORK  [conn13] received client metadata from 127.0.0.1:48404 conn13: { driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:51.909+0800 I NETWORK  [LogicalSessionCacheRefresh] Successfully connected to 127.0.0.1:27018 (1 connections now open to 127.0.0.1:27018 with a 5 second timeout)
+2025-09-28T01:53:51.909+0800 I NETWORK  [ReplicaSetMonitor-TaskExecutor] Successfully connected to 127.0.0.1:27019 (1 connections now open to 127.0.0.1:27019 with a 5 second timeout)
+2025-09-28T01:53:51.910+0800 I NETWORK  [ReplicaSetMonitor-TaskExecutor] Successfully connected to 127.0.0.1:27017 (1 connections now open to 127.0.0.1:27017 with a 5 second timeout)
+2025-09-28T01:53:51.924+0800 I NETWORK  [LogicalSessionCacheRefresh] Successfully connected to 127.0.0.1:27017 (1 connections now open to 127.0.0.1:27017 with a 0 second timeout)
+2025-09-28T01:53:51.925+0800 I NETWORK  [LogicalSessionCacheRefresh] Starting new replica set monitor for rs/127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019
+2025-09-28T01:53:51.926+0800 I NETWORK  [LogicalSessionCacheRefresh] Starting new replica set monitor for rs/127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019
+2025-09-28T01:53:53.692+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:48420 #17 (4 connections now open)
+2025-09-28T01:53:53.693+0800 I NETWORK  [conn17] received client metadata from 127.0.0.1:48420 conn17: { driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+== LOG 27019 ==
+2025-09-28T01:49:02.802+0800 I NETWORK  [conn1] end connection 127.0.0.1:57806 (0 connections now open)
+2025-09-28T01:49:02.809+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:57820 #2 (1 connection now open)
+2025-09-28T01:49:02.812+0800 I NETWORK  [conn2] received client metadata from 127.0.0.1:57820 conn2: { driver: { name: "NetworkInterfaceTL", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:49:02.813+0800 I ASIO     [Replication] Connecting to 127.0.0.1:27017
+2025-09-28T01:49:04.817+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:57828 #5 (2 connections now open)
+2025-09-28T01:49:04.818+0800 I NETWORK  [conn5] end connection 127.0.0.1:57828 (1 connection now open)
+2025-09-28T01:49:04.818+0800 I STORAGE  [replexec-0] createCollection: local.system.replset with generated UUID: 89feb8e7-04fc-4cff-9c9a-ce090dcc71e6
+2025-09-28T01:49:04.834+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:57834 #7 (2 connections now open)
+2025-09-28T01:49:04.834+0800 I REPL     [replexec-0] New replica set config in use: { _id: "rs", version: 1, protocolVersion: 1, writeConcernMajorityJournalDefault: true, members: [ { _id: 0, host: "127.0.0.1:27017", arbiterOnly: false, buildIndexes: true, hidden: false, priority: 1.0, tags: {}, slaveDelay: 0, votes: 1 }, { _id: 1, host: "127.0.0.1:27018", arbiterOnly: false, buildIndexes: true, hidden: false, priority: 1.0, tags: {}, slaveDelay: 0, votes: 1 }, { _id: 2, host: "127.0.0.1:27019", arbiterOnly: false, buildIndexes: true, hidden: false, priority: 1.0, tags: {}, slaveDelay: 0, votes: 1 } ], settings: { chainingAllowed: true, heartbeatIntervalMillis: 2000, heartbeatTimeoutSecs: 10, electionTimeoutMillis: 10000, catchUpTimeoutMillis: -1, catchUpTakeoverDelayMillis: 30000, getLastErrorModes: {}, getLastErrorDefaults: { w: 1, wtimeout: 0 }, replicaSetId: ObjectId('68d8238e0de10726a006c1e4') } }
+2025-09-28T01:49:04.834+0800 I REPL     [replexec-0] This node is 127.0.0.1:27019 in the config
+2025-09-28T01:49:04.834+0800 I REPL     [replexec-0] transition to STARTUP2 from STARTUP
+2025-09-28T01:49:04.834+0800 I REPL     [replexec-0] Starting replication storage threads
+2025-09-28T01:49:04.835+0800 I ASIO     [Replication] Connecting to 127.0.0.1:27018
+2025-09-28T01:49:04.835+0800 I NETWORK  [conn7] received client metadata from 127.0.0.1:57834 conn7: { driver: { name: "NetworkInterfaceTL", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:49:04.835+0800 I REPL     [replexec-1] Member 127.0.0.1:27017 is now in state SECONDARY
+2025-09-28T01:49:04.836+0800 I REPL     [replexec-2] Member 127.0.0.1:27018 is now in state STARTUP2
+2025-09-28T01:49:04.837+0800 I STORAGE  [replexec-0] createCollection: local.temp_oplog_buffer with generated UUID: 70f84f1b-eb05-42f4-89bc-1fed81c97baa
+2025-09-28T01:49:04.853+0800 I REPL     [replication-0] Starting initial sync (attempt 1 of 10)
+2025-09-28T01:49:04.853+0800 I STORAGE  [replication-0] Finishing collection drop for local.temp_oplog_buffer (70f84f1b-eb05-42f4-89bc-1fed81c97baa).
+2025-09-28T01:49:04.855+0800 I STORAGE  [replication-0] createCollection: local.temp_oplog_buffer with generated UUID: e91e5d8a-50b6-47eb-b724-b16ac618c095
+2025-09-28T01:49:04.876+0800 I REPL     [replication-0] sync source candidate: 127.0.0.1:27017
+2025-09-28T01:49:04.876+0800 I REPL     [replication-0] Initial syncer oplog truncation finished in: 0ms
+2025-09-28T01:49:04.876+0800 I REPL     [replication-0] ******
+2025-09-28T01:49:04.876+0800 I REPL     [replication-0] creating replication oplog of size: 45310MB...
+2025-09-28T01:49:04.876+0800 I STORAGE  [replication-0] createCollection: local.oplog.rs with generated UUID: 3663096d-65bc-45bf-9416-8611f02304ed
+2025-09-28T01:49:04.884+0800 I STORAGE  [replication-0] Starting OplogTruncaterThread local.oplog.rs
+2025-09-28T01:49:04.884+0800 I STORAGE  [replication-0] The size storer reports that the oplog contains 0 records totaling to 0 bytes
+2025-09-28T01:49:04.884+0800 I STORAGE  [replication-0] Scanning the oplog to determine where to place markers for truncation
+2025-09-28T01:49:04.925+0800 I REPL     [replication-0] ******
+2025-09-28T01:49:04.925+0800 I STORAGE  [replication-0] dropAllDatabasesExceptLocal 1
+2025-09-28T01:49:04.925+0800 I ASIO     [RS] Connecting to 127.0.0.1:27017
+2025-09-28T01:49:04.927+0800 I ASIO     [RS] Connecting to 127.0.0.1:27017
+2025-09-28T01:49:04.928+0800 I REPL     [replication-0] CollectionCloner::start called, on ns:admin.system.version
+2025-09-28T01:49:04.929+0800 I STORAGE  [repl writer worker 15] createCollection: admin.system.version with provided UUID: 1fc5349d-4ba3-4311-badc-c94233ba1e96
+2025-09-28T01:49:04.943+0800 I INDEX    [repl writer worker 15] build index on: admin.system.version properties: { v: 2, key: { _id: 1 }, name: "_id_", ns: "admin.system.version" }
+2025-09-28T01:49:04.943+0800 I INDEX    [repl writer worker 15] 	 building index using bulk method; build may temporarily use up to 500 megabytes of RAM
+2025-09-28T01:49:04.944+0800 I COMMAND  [repl writer worker 0] setting featureCompatibilityVersion to 4.0
+2025-09-28T01:49:04.944+0800 I NETWORK  [repl writer worker 0] Skip closing connection for connection # 7
+2025-09-28T01:49:04.944+0800 I NETWORK  [repl writer worker 0] Skip closing connection for connection # 2
+2025-09-28T01:49:04.944+0800 I REPL     [repl writer worker 0] CollectionCloner ns:admin.system.version finished cloning with status: OK
+2025-09-28T01:49:04.947+0800 I REPL     [repl writer worker 0] Finished cloning data: OK. Beginning oplog replay.
+2025-09-28T01:49:04.948+0800 I REPL     [replication-0] No need to apply operations. (currently at { : Timestamp(1758995342, 1) })
+2025-09-28T01:49:04.948+0800 I REPL     [replication-1] Finished fetching oplog during initial sync: CallbackCanceled: error in fetcher batch callback: oplog fetcher is shutting down. Last fetched optime and hash: { ts: Timestamp(0, 0), t: -1 }[0]
+2025-09-28T01:49:04.948+0800 I REPL     [replication-1] Initial sync attempt finishing up.
+2025-09-28T01:49:04.948+0800 I REPL     [replication-1] Initial Sync Attempt Statistics: { failedInitialSyncAttempts: 0, maxFailedInitialSyncAttempts: 10, initialSyncStart: new Date(1758995344853), initialSyncAttempts: [], fetchedMissingDocs: 0, appliedOps: 0, initialSyncOplogStart: Timestamp(1758995342, 1), initialSyncOplogEnd: Timestamp(1758995342, 1), databases: { databasesCloned: 1, admin: { collections: 1, clonedCollections: 1, start: new Date(1758995344928), end: new Date(1758995344947), elapsedMillis: 19, admin.system.version: { documentsToCopy: 1, documentsCopied: 1, indexes: 1, fetchedBatches: 1, start: new Date(1758995344928), end: new Date(1758995344947), elapsedMillis: 19 } } } }
+2025-09-28T01:49:04.949+0800 I STORAGE  [replication-1] Finishing collection drop for local.temp_oplog_buffer (e91e5d8a-50b6-47eb-b724-b16ac618c095).
+2025-09-28T01:49:04.952+0800 I REPL     [replication-1] initial sync done; took 0s.
+2025-09-28T01:49:04.952+0800 I REPL     [replication-1] transition to RECOVERING from STARTUP2
+2025-09-28T01:49:04.952+0800 I REPL     [replication-1] Starting replication fetcher thread
+2025-09-28T01:49:04.952+0800 I REPL     [replication-1] Starting replication applier thread
+2025-09-28T01:49:04.952+0800 I REPL     [replication-1] Starting replication reporter thread
+2025-09-28T01:49:04.952+0800 I REPL     [rsSync-0] Starting oplog application
+2025-09-28T01:49:04.952+0800 I REPL     [rsBackgroundSync] could not find member to sync from
+2025-09-28T01:49:04.953+0800 I REPL     [rsSync-0] transition to SECONDARY from RECOVERING
+2025-09-28T01:49:04.953+0800 I REPL     [rsSync-0] Resetting sync source to empty, which was :27017
+2025-09-28T01:49:04.953+0800 I REPL     [replexec-0] Member 127.0.0.1:27018 is now in state SECONDARY
+2025-09-28T01:49:14.082+0800 I STORAGE  [conn2] createCollection: local.replset.election with generated UUID: 18d3cdd5-4fef-43c3-8402-19628ea0e286
+2025-09-28T01:49:14.471+0800 I REPL     [replexec-1] Member 127.0.0.1:27017 is now in state PRIMARY
+2025-09-28T01:49:14.928+0800 I CONNPOOL [RS] Ending connection to host 127.0.0.1:27017 due to bad connection status; 1 connections to that host remain open
+2025-09-28T01:49:16.958+0800 I REPL     [rsBackgroundSync] sync source candidate: 127.0.0.1:27017
+2025-09-28T01:49:16.958+0800 I REPL     [rsBackgroundSync] Changed sync source from empty to 127.0.0.1:27017
+2025-09-28T01:49:16.959+0800 I ASIO     [RS] Connecting to 127.0.0.1:27017
+2025-09-28T01:49:16.962+0800 I STORAGE  [repl writer worker 4] createCollection: config.transactions with provided UUID: 32137e6a-1b25-40f6-aab4-6a30b8e2aa2a
+2025-09-28T01:49:16.995+0800 I STORAGE  [repl writer worker 6] createCollection: admin.system.keys with provided UUID: d9d6fd58-60a2-415c-980a-c557f7acc2ea
+2025-09-28T01:49:17.030+0800 I STORAGE  [replication-1] Triggering the first stable checkpoint. Initial Data: Timestamp(1758995342, 1) PrevStable: Timestamp(0, 0) CurrStable: Timestamp(1758995355, 4)
+2025-09-28T01:53:50.233+0800 I STORAGE  [repl writer worker 0] createCollection: config.system.sessions with provided UUID: 8dd257e4-688f-4e08-a6ef-a0c7e8e671a9
+2025-09-28T01:53:50.271+0800 I INDEX    [repl writer worker 4] build index on: config.system.sessions properties: { v: 2, key: { lastUse: 1 }, name: "lsidTTLIndex", expireAfterSeconds: 1800, ns: "config.system.sessions" }
+2025-09-28T01:53:50.271+0800 I INDEX    [repl writer worker 4] 	 building index using bulk method; build may temporarily use up to 500 megabytes of RAM
+2025-09-28T01:53:50.272+0800 I INDEX    [repl writer worker 4] build index done.  scanned 0 total records. 0 secs
+2025-09-28T01:53:51.908+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:46526 #12 (3 connections now open)
+2025-09-28T01:53:51.909+0800 I NETWORK  [conn12] received client metadata from 127.0.0.1:46526 conn12: { driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:53.674+0800 I NETWORK  [LogicalSessionCacheRefresh] Starting new replica set monitor for rs/127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019
+2025-09-28T01:53:53.675+0800 I NETWORK  [listener] connection accepted from 127.0.0.1:46530 #15 (4 connections now open)
+2025-09-28T01:53:53.675+0800 I NETWORK  [conn15] received client metadata from 127.0.0.1:46530 conn15: { driver: { name: "MongoDB Internal Client", version: "4.0.9" }, os: { type: "Linux", name: "Ubuntu", architecture: "x86_64", version: "24.04" } }
+2025-09-28T01:53:53.676+0800 I NETWORK  [LogicalSessionCacheRefresh] Successfully connected to 127.0.0.1:27019 (1 connections now open to 127.0.0.1:27019 with a 5 second timeout)
+2025-09-28T01:53:53.676+0800 I NETWORK  [ReplicaSetMonitor-TaskExecutor] Successfully connected to 127.0.0.1:27017 (1 connections now open to 127.0.0.1:27017 with a 5 second timeout)
+2025-09-28T01:53:53.693+0800 I NETWORK  [LogicalSessionCacheRefresh] Successfully connected to 127.0.0.1:27018 (1 connections now open to 127.0.0.1:27018 with a 5 second timeout)
+2025-09-28T01:53:53.696+0800 I NETWORK  [LogicalSessionCacheRefresh] Successfully connected to 127.0.0.1:27017 (1 connections now open to 127.0.0.1:27017 with a 0 second timeout)
+2025-09-28T01:53:53.696+0800 I NETWORK  [LogicalSessionCacheRefresh] Starting new replica set monitor for rs/127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019
+2025-09-28T01:53:53.698+0800 I NETWORK  [LogicalSessionCacheRefresh] Starting new replica set monitor for rs/127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019
+== isMaster ==
+MongoDB shell version v4.0.9
+connecting to: mongodb://127.0.0.1:27017/?gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("54a1cd47-b299-461b-8dca-571e6a358078") }
+MongoDB server version: 4.0.9
+{
+	"hosts" : [
+		"127.0.0.1:27017",
+		"127.0.0.1:27018",
+		"127.0.0.1:27019"
+	],
+	"setName" : "rs",
+	"setVersion" : 1,
+	"ismaster" : true,
+	"secondary" : false,
+	"primary" : "127.0.0.1:27017",
+	"me" : "127.0.0.1:27017",
+	"electionId" : ObjectId("7fffffff0000000000000001"),
+	"lastWrite" : {
+		"opTime" : {
+			"ts" : Timestamp(1758995645, 1),
+			"t" : NumberLong(1)
+		},
+		"lastWriteDate" : ISODate("2025-09-27T17:54:05Z"),
+		"majorityOpTime" : {
+			"ts" : Timestamp(1758995645, 1),
+			"t" : NumberLong(1)
+		},
+		"majorityWriteDate" : ISODate("2025-09-27T17:54:05Z")
+	},
+	"maxBsonObjectSize" : 16777216,
+	"maxMessageSizeBytes" : 48000000,
+	"maxWriteBatchSize" : 100000,
+	"localTime" : ISODate("2025-09-27T17:54:06.194Z"),
+	"logicalSessionTimeoutMinutes" : 30,
+	"minWireVersion" : 0,
+	"maxWireVersion" : 7,
+	"readOnly" : false,
+	"ok" : 1,
+	"operationTime" : Timestamp(1758995645, 1),
+	"$clusterTime" : {
+		"clusterTime" : Timestamp(1758995645, 1),
+		"signature" : {
+			"hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+			"keyId" : NumberLong(0)
+		}
+	}
+}
+== rs.conf ==
+MongoDB shell version v4.0.9
+connecting to: mongodb://127.0.0.1:27017/?gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("416a2ed0-60d8-4884-94d1-cdbe7e06748b") }
+MongoDB server version: 4.0.9
+{
+	"_id" : "rs",
+	"version" : 1,
+	"protocolVersion" : NumberLong(1),
+	"writeConcernMajorityJournalDefault" : true,
+	"members" : [
+		{
+			"_id" : 0,
+			"host" : "127.0.0.1:27017",
+			"arbiterOnly" : false,
+			"buildIndexes" : true,
+			"hidden" : false,
+			"priority" : 1,
+			"tags" : {
+				
+			},
+			"slaveDelay" : NumberLong(0),
+			"votes" : 1
+		},
+		{
+			"_id" : 1,
+			"host" : "127.0.0.1:27018",
+			"arbiterOnly" : false,
+			"buildIndexes" : true,
+			"hidden" : false,
+			"priority" : 1,
+			"tags" : {
+				
+			},
+			"slaveDelay" : NumberLong(0),
+			"votes" : 1
+		},
+		{
+			"_id" : 2,
+			"host" : "127.0.0.1:27019",
+			"arbiterOnly" : false,
+			"buildIndexes" : true,
+			"hidden" : false,
+			"priority" : 1,
+			"tags" : {
+				
+			},
+			"slaveDelay" : NumberLong(0),
+			"votes" : 1
+		}
+	],
+	"settings" : {
+		"chainingAllowed" : true,
+		"heartbeatIntervalMillis" : 2000,
+		"heartbeatTimeoutSecs" : 10,
+		"electionTimeoutMillis" : 10000,
+		"catchUpTimeoutMillis" : -1,
+		"catchUpTakeoverDelayMillis" : 30000,
+		"getLastErrorModes" : {
+			
+		},
+		"getLastErrorDefaults" : {
+			"w" : 1,
+			"wtimeout" : 0
+		},
+		"replicaSetId" : ObjectId("68d8238e0de10726a006c1e4")
+	}
+}
+== rs.status ==
+MongoDB shell version v4.0.9
+connecting to: mongodb://127.0.0.1:27017/?gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("efab065f-48b0-4f0b-81b7-2f76c1c07063") }
+MongoDB server version: 4.0.9
+{
+	"set" : "rs",
+	"date" : ISODate("2025-09-27T17:54:06.371Z"),
+	"myState" : 1,
+	"term" : NumberLong(1),
+	"syncingTo" : "",
+	"syncSourceHost" : "",
+	"syncSourceId" : -1,
+	"heartbeatIntervalMillis" : NumberLong(2000),
+	"optimes" : {
+		"lastCommittedOpTime" : {
+			"ts" : Timestamp(1758995645, 1),
+			"t" : NumberLong(1)
+		},
+		"readConcernMajorityOpTime" : {
+			"ts" : Timestamp(1758995645, 1),
+			"t" : NumberLong(1)
+		},
+		"appliedOpTime" : {
+			"ts" : Timestamp(1758995645, 1),
+			"t" : NumberLong(1)
+		},
+		"durableOpTime" : {
+			"ts" : Timestamp(1758995645, 1),
+			"t" : NumberLong(1)
+		}
+	},
+	"lastStableCheckpointTimestamp" : Timestamp(1758995595, 1),
+	"members" : [
+		{
+			"_id" : 0,
+			"name" : "127.0.0.1:27017",
+			"health" : 1,
+			"state" : 1,
+			"stateStr" : "PRIMARY",
+			"uptime" : 317,
+			"optime" : {
+				"ts" : Timestamp(1758995645, 1),
+				"t" : NumberLong(1)
+			},
+			"optimeDate" : ISODate("2025-09-27T17:54:05Z"),
+			"syncingTo" : "",
+			"syncSourceHost" : "",
+			"syncSourceId" : -1,
+			"infoMessage" : "",
+			"electionTime" : Timestamp(1758995354, 1),
+			"electionDate" : ISODate("2025-09-27T17:49:14Z"),
+			"configVersion" : 1,
+			"self" : true,
+			"lastHeartbeatMessage" : ""
+		},
+		{
+			"_id" : 1,
+			"name" : "127.0.0.1:27018",
+			"health" : 1,
+			"state" : 2,
+			"stateStr" : "SECONDARY",
+			"uptime" : 303,
+			"optime" : {
+				"ts" : Timestamp(1758995645, 1),
+				"t" : NumberLong(1)
+			},
+			"optimeDurable" : {
+				"ts" : Timestamp(1758995645, 1),
+				"t" : NumberLong(1)
+			},
+			"optimeDate" : ISODate("2025-09-27T17:54:05Z"),
+			"optimeDurableDate" : ISODate("2025-09-27T17:54:05Z"),
+			"lastHeartbeat" : ISODate("2025-09-27T17:54:06.298Z"),
+			"lastHeartbeatRecv" : ISODate("2025-09-27T17:54:05.100Z"),
+			"pingMs" : NumberLong(0),
+			"lastHeartbeatMessage" : "",
+			"syncingTo" : "127.0.0.1:27017",
+			"syncSourceHost" : "127.0.0.1:27017",
+			"syncSourceId" : 0,
+			"infoMessage" : "",
+			"configVersion" : 1
+		},
+		{
+			"_id" : 2,
+			"name" : "127.0.0.1:27019",
+			"health" : 1,
+			"state" : 2,
+			"stateStr" : "SECONDARY",
+			"uptime" : 303,
+			"optime" : {
+				"ts" : Timestamp(1758995645, 1),
+				"t" : NumberLong(1)
+			},
+			"optimeDurable" : {
+				"ts" : Timestamp(1758995645, 1),
+				"t" : NumberLong(1)
+			},
+			"optimeDate" : ISODate("2025-09-27T17:54:05Z"),
+			"optimeDurableDate" : ISODate("2025-09-27T17:54:05Z"),
+			"lastHeartbeat" : ISODate("2025-09-27T17:54:06.303Z"),
+			"lastHeartbeatRecv" : ISODate("2025-09-27T17:54:05.114Z"),
+			"pingMs" : NumberLong(0),
+			"lastHeartbeatMessage" : "",
+			"syncingTo" : "127.0.0.1:27017",
+			"syncSourceHost" : "127.0.0.1:27017",
+			"syncSourceId" : 0,
+			"infoMessage" : "",
+			"configVersion" : 1
+		}
+	],
+	"ok" : 1,
+	"operationTime" : Timestamp(1758995645, 1),
+	"$clusterTime" : {
+		"clusterTime" : Timestamp(1758995645, 1),
+		"signature" : {
+			"hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+			"keyId" : NumberLong(0)
+		}
+	}
+}
+== rs.status concise ==
+MongoDB shell version v4.0.9
+connecting to: mongodb://127.0.0.1:27017/?gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("27c267f0-850c-4b7e-a7ee-5de4e13c10d7") }
+MongoDB server version: 4.0.9
+[
+	{
+		"id" : 0,
+		"name" : "127.0.0.1:27017",
+		"state" : "PRIMARY",
+		"info" : "",
+		"err" : "",
+		"uptime" : 317
+	},
+	{
+		"id" : 1,
+		"name" : "127.0.0.1:27018",
+		"state" : "SECONDARY",
+		"info" : "",
+		"err" : "",
+		"uptime" : 303
+	},
+	{
+		"id" : 2,
+		"name" : "127.0.0.1:27019",
+		"state" : "SECONDARY",
+		"info" : "",
+		"err" : "",
+		"uptime" : 303
+	}
+]
+== TCP CONNECT TEST ==
+"
+### 27017"
+FAIL
+"
+### 27018"
+FAIL
+"
+### 27019"
+FAIL

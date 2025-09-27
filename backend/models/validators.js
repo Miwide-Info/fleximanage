@@ -184,9 +184,13 @@ const validateFileName = (name) => { return isValidFileName(name); };
 const validateFieldName = (name) => { return /^[a-z0-9-. ]{1,100}$/i.test(name || ''); };
 
 const validateUserName = name => {
+  // In development you may want to allow 1-character test names.
+  // Set ENV DEV_ALLOW_SHORT_NAMES=true to relax lower bound from 2 to 1.
+  const allowShort = process.env.DEV_ALLOW_SHORT_NAMES === 'true';
+  const baseRegex = allowShort ? /^[a-z0-9-. ]{1,15}$/i : /^[a-z0-9-. ]{2,15}$/i;
   return (
     !isEmpty(name) &&
-    (email.validate(name) || /^[a-z0-9-. ]{2,15}$/i.test(name))
+    (email.validate(name) || baseRegex.test(name))
   );
 };
 const validateEmail = (mail) => { return !isEmpty(mail) && email.validate(mail); };

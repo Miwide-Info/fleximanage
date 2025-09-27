@@ -14,7 +14,8 @@ import {
 import './Sidebar.css';
 
 const Sidebar = ({ collapsed }) => {
-  const [openSections, setOpenSections] = useState({ account: true });
+  // Default: Account group collapsed
+  const [openSections, setOpenSections] = useState({ account: false });
 
   const toggleSection = (key) => {
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));

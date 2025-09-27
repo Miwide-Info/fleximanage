@@ -1,22 +1,19 @@
 import React from 'react';
 import { Navbar, Nav, Dropdown } from 'react-bootstrap';
-import { FaBars, FaUser, FaSignOutAlt, FaBell, FaCog } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaBell, FaCog, FaBars } from 'react-icons/fa';
 import './Header.css';
 
-const Header = ({ onToggleSidebar, onLogout }) => {
+const Header = ({ onLogout }) => {
   const notificationCount = 13; // TODO: replace with real count from props/store
   const displayCount = notificationCount > 9 ? '9+' : notificationCount;
 
   return (
     <Navbar bg="white" className="header-navbar">
       <div className="d-flex align-items-center">
-        <button
-          className="btn btn-link sidebar-toggle"
-          onClick={onToggleSidebar}
-        >
+        <span className="sidebar-toggle btn btn-link disabled" style={{ cursor: 'default' }}>
           <FaBars />
-        </button>
-        <h4 className="mb-0 ms-3">FlexiManage Dashboard</h4>
+        </span>
+        <h4 className="mb-0 ms-2">OpenSource-OpenNetworking</h4>
       </div>
 
       <Nav className="ms-auto d-flex align-items-center">

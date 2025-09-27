@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaUser, FaLock } from 'react-icons/fa';
 import api from '../services/api';
 import './Login.css';
@@ -10,7 +11,19 @@ const Login = ({ onLogin }) => {
     password: ''
   });
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Parse query params for registration success messages
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('registered')) {
+      const fast = params.get('fast') === '1';
+      setInfo(`Registration successful${fast ? ' (auto-verified)' : ''}. You can now sign in.`);
+    }
+  }, [location.search]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,20 +45,24 @@ const Login = ({ onLogin }) => {
         password: credentials.password
       });
 
-      // Check if 2FA is required
-      if (response.data.token) {
-        // 2FA required - for now, we'll handle this later
-        // Store the login process token
+      // Distinguish between 2FA login flow vs final JWT issuance.
+      // 2FA pre-step returns only { name, token } (no refreshToken header/body combination).
+      const hasProcessTokenOnly = response.data?.token && !response.data?.refreshToken;
+      if (hasProcessTokenOnly) {
         localStorage.setItem('loginToken', response.data.token);
         setError('2FA authentication required. This feature is not yet implemented.');
         return;
       }
 
-      // Login successful - JWT token should be in response headers
-      const token = response.headers['refresh-jwt'] || response.headers['Refresh-JWT'];
-      if (token) {
-        localStorage.setItem('token', token);
-        onLogin();
+      // Final login: backend returns token+refreshToken in body AND also in headers.
+      const headerToken = response.headers['refresh-jwt'] || response.headers['Refresh-JWT'];
+      const bodyToken = response.data?.token;
+      const finalToken = headerToken || bodyToken;
+      if (finalToken) {
+        localStorage.setItem('token', finalToken);
+        onLogin(); // update parent auth state
+        // Navigate explicitly to home to avoid blank content when current path is /login
+        navigate('/home', { replace: true });
       } else {
         setError('Login failed: No token received from server');
       }
@@ -77,6 +94,11 @@ const Login = ({ onLogin }) => {
               {error && (
                 <Alert variant="danger" className="mb-4">
                   {error}
+                </Alert>
+              )}
+              {!error && info && (
+                <Alert variant="success" className="mb-4">
+                  {info}
                 </Alert>
               )}
 
@@ -128,7 +150,7 @@ const Login = ({ onLogin }) => {
 
               <div className="text-center mt-4">
                 <small className="text-muted">
-                  Default credentials: admin@flexiwan.com / admin
+                  Don't have an account? <Link to="/register">Register</Link>
                 </small>
               </div>
             </Card.Body>
