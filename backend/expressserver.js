@@ -376,11 +376,13 @@ class ExpressServer {
     try {
       this.server = http.createServer(this.app);
 
-      this.options = {
-        key: fs.readFileSync(path.join(__dirname, 'bin', configs.get('httpsCertKey'))),
-        cert: fs.readFileSync(path.join(__dirname, 'bin', configs.get('httpsCert')))
-      };
-      this.secureServer = https.createServer(this.options, this.app);
+      if (configs.get('shouldRedirectHttps', 'boolean')) {
+        this.options = {
+          key: fs.readFileSync(path.join(__dirname, 'bin', configs.get('httpsCertKey'))),
+          cert: fs.readFileSync(path.join(__dirname, 'bin', configs.get('httpsCert')))
+        };
+        this.secureServer = https.createServer(this.options, this.app);
+      }
 
       // setup wss here
       this.wss = new WebSocket.Server({
@@ -401,11 +403,13 @@ class ExpressServer {
       this.server.on('error', this.onError(this.port));
       this.server.on('listening', this.onListening(this.server));
 
-      this.secureServer.listen(this.securePort, () => {
-        console.log('HTTPS server listening on port', { params: { port: this.securePort } });
-      });
-      this.secureServer.on('error', this.onError(this.securePort));
-      this.secureServer.on('listening', this.onListening(this.secureServer));
+      if (configs.get('shouldRedirectHttps', 'boolean')) {
+        this.secureServer.listen(this.securePort, () => {
+          console.log('HTTPS server listening on port', { params: { port: this.securePort } });
+        });
+        this.secureServer.on('error', this.onError(this.securePort));
+        this.secureServer.on('listening', this.onListening(this.secureServer));
+      }
     } catch (error) {
       console.log('Express server lunch error', { params: { message: error.message } });
     }
