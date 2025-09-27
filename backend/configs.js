@@ -269,7 +269,12 @@ const configEnv = {
     SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest-testing',
     userTokenExpiration: 604800,
     logLevel: 'debug',
-    mailerPort: 1025
+    mailerPort: 1025,
+    // Enable HTTPS & redirect automatically in local development so no need for env vars each run
+    shouldRedirectHttps: true,
+    // Use relative (no leading slash) so path.join(__dirname,'bin',value) resolves correctly
+    httpsCertKey: 'cert.local.flexiwan.com/domain.key',
+    httpsCert: 'cert.local.flexiwan.com/certificate.pem'
   },
   testing: {
     // Mgmt-Agent protocol version for testing purposes

@@ -128,7 +128,7 @@ const Login = ({ onLogin }) => {
 
               <div className="text-center mt-4">
                 <small className="text-muted">
-                  Default credentials: admin / admin
+                  Default credentials: admin@flexiwan.com / admin
                 </small>
               </div>
             </Card.Body>

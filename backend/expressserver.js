@@ -183,6 +183,17 @@ class ExpressServer {
     this.app.use(express.urlencoded({ extended: false }));
     this.app.use(cookieParser());
 
+    // Explicit JSON parse error handler (must appear after body parsers, before routes)
+    // Without this, malformed JSON produces a generic 400 without our contextual log,
+    // making it hard to distinguish from other pre-route 400 causes.
+    this.app.use((err, req, res, next) => {
+      if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        logger.warn('JSON parse error', { params: { message: err.message }, req });
+        return res.status(400).json({ error: 'Invalid JSON payload' });
+      }
+      next(err);
+    });
+
     // Routes allowed without authentication
     this.app.get('/', (req, res) => this.sendIndexFile(req, res));
     this.app.use(express.static(path.join(__dirname, configs.get('clientStaticDir'))));
@@ -377,11 +388,19 @@ class ExpressServer {
       this.server = http.createServer(this.app);
 
       if (configs.get('shouldRedirectHttps', 'boolean')) {
-        this.options = {
-          key: fs.readFileSync(path.join(__dirname, 'bin', configs.get('httpsCertKey'))),
-          cert: fs.readFileSync(path.join(__dirname, 'bin', configs.get('httpsCert')))
-        };
-        this.secureServer = https.createServer(this.options, this.app);
+        const keyPath = path.join(__dirname, 'bin', configs.get('httpsCertKey'));
+        const certPath = path.join(__dirname, 'bin', configs.get('httpsCert'));
+        console.log('[HTTPS] Enabling HTTPS. Key:', keyPath, 'Cert:', certPath);
+        try {
+          this.options = {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath)
+          };
+          this.secureServer = https.createServer(this.options, this.app);
+        } catch (certErr) {
+          console.error('[HTTPS] Failed to load certificate files', { message: certErr.message });
+          // Fallback: continue with HTTP only rather than crashing whole process
+        }
       }
 
       // setup wss here
@@ -404,11 +423,16 @@ class ExpressServer {
       this.server.on('listening', this.onListening(this.server));
 
       if (configs.get('shouldRedirectHttps', 'boolean')) {
-        this.secureServer.listen(this.securePort, () => {
-          console.log('HTTPS server listening on port', { params: { port: this.securePort } });
-        });
-        this.secureServer.on('error', this.onError(this.securePort));
-        this.secureServer.on('listening', this.onListening(this.secureServer));
+        if (this.secureServer) {
+          this.secureServer.listen(this.securePort, () => {
+            console.log('HTTPS server listening on port', { params: { port: this.securePort } });
+          });
+          this.secureServer.on('error', this.onError(this.securePort));
+          this.secureServer.on('listening', this.onListening(this.secureServer));
+        } else {
+          console.warn('[HTTPS] shouldRedirectHttps=true but secureServer not initialized ' +
+            '- cert load failed. HTTP only.');
+        }
       }
     } catch (error) {
       console.log('Express server lunch error', { params: { message: error.message } });

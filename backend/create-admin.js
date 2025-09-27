@@ -5,7 +5,7 @@ const Account = require('./models/accounts');
 const { membership } = require('./models/membership');
 const configs = require('./configs')();
 
-async function createDefaultAdmin() {
+async function createDefaultAdmin () {
   try {
     // Connect to MongoDB
     const mongoUrl = configs.get('mongoUrl');
@@ -16,7 +16,13 @@ async function createDefaultAdmin() {
     // Check if admin user already exists
     const existingUser = await User.findOne({ email: 'admin@flexiwan.com' });
     if (existingUser) {
-      console.log('Admin user already exists');
+      if (!existingUser.admin) {
+        existingUser.admin = true;
+        await existingUser.save();
+        console.log('Existing admin user promoted: admin flag set to true');
+      } else {
+        console.log('Admin user already exists and is admin=true');
+      }
       return;
     }
 
@@ -41,6 +47,7 @@ async function createDefaultAdmin() {
       lastName: 'User',
       jobTitle: 'Administrator',
       defaultAccount: account._id,
+      admin: true,
       organizations: [{
         org: account._id,
         membership: membership.admin

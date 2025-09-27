@@ -4,6 +4,9 @@ import { FaBars, FaUser, FaSignOutAlt, FaBell, FaCog } from 'react-icons/fa';
 import './Header.css';
 
 const Header = ({ onToggleSidebar, onLogout }) => {
+  const notificationCount = 13; // TODO: replace with real count from props/store
+  const displayCount = notificationCount > 9 ? '9+' : notificationCount;
+
   return (
     <Navbar bg="white" className="header-navbar">
       <div className="d-flex align-items-center">
@@ -17,9 +20,9 @@ const Header = ({ onToggleSidebar, onLogout }) => {
       </div>
 
       <Nav className="ms-auto d-flex align-items-center">
-        <div className="notifications me-3">
+        <div className="notifications me-3" aria-label={`Notifications: ${notificationCount}`}>
           <FaBell className="notification-icon" />
-          <span className="notification-badge">3</span>
+          <span className="notification-badge" role="status" aria-live="polite">{displayCount}</span>
         </div>
 
         <Dropdown align="end">

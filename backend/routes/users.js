@@ -718,5 +718,33 @@ router.route('/mfa/verifyRecoveryCode')
     return await sendJwtToken(req, res, validated);
   });
 
+// List users (admin only) - simple diagnostic endpoint
+router.route('/list')
+  .options(cors.corsWithOptions, (req, res) => { res.sendStatus(200); })
+  .get(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    try {
+      // Only allow admins
+      if (!req?.user?.admin) {
+        return next(createError(403, 'Admin only'));
+      }
+      const users = await User.find({}, {
+        _id: 1,
+        email: 1,
+        username: 1,
+        name: 1,
+        lastName: 1,
+        state: 1,
+        admin: 1,
+        defaultAccount: 1,
+        createdAt: 1,
+        updatedAt: 1
+      }).lean();
+      res.json({ count: users.length, users });
+    } catch (err) {
+      logger.error('List users failed', { params: { reason: err.message } });
+      return next(createError(500, 'List users failed'));
+    }
+  });
+
 // Default exports
 module.exports = router;
