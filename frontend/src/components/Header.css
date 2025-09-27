@@ -1,0 +1,58 @@
+.header-navbar {
+  padding: 0 20px;
+  height: 60px;
+  border-bottom: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  justify-content: space-between !important;
+}
+
+.sidebar-toggle {
+  color: #6c757d;
+  border: none;
+  font-size: 1.2rem;
+  padding: 8px;
+}
+
+.sidebar-toggle:hover {
+  color: #495057;
+}
+
+.notifications {
+  position: relative;
+}
+
+.notification-icon {
+  font-size: 1.2rem;
+  color: #6c757d;
+  cursor: pointer;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  min-width: 18px;
+  text-align: center;
+}
+
+.user-dropdown {
+  color: #495057 !important;
+  border: none;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+}
+
+.user-dropdown:focus {
+  box-shadow: none !important;
+}
+
+.user-dropdown:hover {
+  color: #212529 !important;
+}

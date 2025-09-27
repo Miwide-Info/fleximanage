@@ -1,0 +1,75 @@
+.network-page {
+  padding: 20px;
+}
+
+.page-header {
+  margin-bottom: 30px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.network-detail {
+  margin-bottom: 20px;
+}
+
+.network-detail h6 {
+  color: #495057;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 5px;
+  margin-bottom: 15px;
+}
+
+.topology-placeholder {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.topology-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px;
+  padding: 10px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  min-width: 80px;
+}
+
+.topology-node svg {
+  margin-bottom: 5px;
+  color: #6c757d;
+}
+
+.main-node {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.main-node svg {
+  color: #2196f3;
+}
+
+.device-node {
+  background-color: #f3e5f5;
+  border-color: #9c27b0;
+}
+
+.device-node svg {
+  color: #9c27b0;
+}
+
+.topology-connections {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
