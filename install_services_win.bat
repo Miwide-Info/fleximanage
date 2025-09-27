@@ -2,38 +2,38 @@ REM @echo off
 REM ==================================================================
 REM install_services_win.bat
 REM
-REM 统一安装与管理脚本 — 在 Windows 上安装并运行：
-REM   - aiosmtpd (SMTP server, 默认以后台进程运行)
-REM   - MongoDB (安排为 3 节点副本集：27017,27018,27019)
-REM   - Redis (默认 6379)
-REM   - Node.js/npm (通过 Chocolatey)
+REM Unified installation & management script — installs and runs:
+REM   - aiosmtpd (SMTP server, default background process)
+REM   - MongoDB (3-node replica set: 27017,27018,27019)
+REM   - Redis (default 6379)
+REM   - Node.js/npm (via Chocolatey)
 REM
-REM 设计原则：
-REM   - 非破坏性、可重入：如果组件已安装则跳过或尝试更新，脚本不会因单步失败而中断（尽量继续完成其余步骤）
-REM   - 默认使用后台运行（start /b）以避免服务环境（LocalSystem）带来的 Python 环境差异问题。
-REM   - 提供可选的 NSSM 注册为服务路径，用户可通过设置环境变量 PREFER_SERVICE=1 来启用（需要 nssm 可用且配置妥当）。
+REM Design principles:
+REM   - Non-destructive & re-entrant: skip or update if already installed; continue remaining steps on failure.
+REM   - Background start (start /b) by default to avoid Python env differences under LocalSystem.
+REM   - Optional NSSM service mode via PREFER_SERVICE=1 (requires NSSM installed & configured).
 REM
-REM 快速使用：以管理员身份打开 PowerShell/命令提示符后运行：
+REM Quick usage: open an elevated PowerShell/CMD and run:
 REM   C:\fleximanage\install_services_win.bat
-REM 可选：以服务模式安装（如果已安装 nssm 并希望使用服务管理）：
+REM Optional: service mode (if NSSM installed):
 REM   set PREFER_SERVICE=1
 REM   C:\fleximanage\install_services_win.bat
 REM
 REM 入口：先跳转到参数/管理员检查，再进入主流程
 goto :entry
-REM 注意事项：
-REM   - 需要以管理员权限运行以便注册服务和打开低编号端口及创建系统目录。
-REM   - Chocolatey 的安装可能要求重启 shell 才能在当前会话中立刻使用 choco；脚本会尝试在当前会话寻找 choco，如果找不到会继续但提醒用户。
-REM   - 如果需要将 aiosmtpd 运行为 Windows 服务，建议配置 NSSM 使用一个具有访问 Python site-packages 的用户帐户，或将 Python 安装为系统范围（供 LocalSystem 使用）。
+REM Notes:
+REM   - Must run elevated (service registration, low ports, system dirs).
+REM   - Chocolatey install may need shell restart; script attempts to locate choco and warns if absent.
+REM   - For aiosmtpd as service: use an account with site-packages access or system-wide Python.
 REM
 REM ==================================================================
 
 :entry
-REM 简单的帮助参数解析
+REM Simple help argument parsing
 if "%~1"=="--help" goto :usage
 if "%~1"=="-h" goto :usage
 
-REM 检查管理员权限
+REM Admin privilege check
 openfiles >nul 2>&1
 if %errorlevel% NEQ 0 (
     echo 请以管理员权限运行本脚本
@@ -59,7 +59,7 @@ exit /b 0
 :after_usage
 
 
-REM 检查依赖
+REM Dependency check
 setlocal enabledelayedexpansion
 set missing=
 
@@ -86,30 +86,30 @@ if not defined NSSM (
     set "NSSM="
 )
 
-REM 默认不强制注册为 Windows 服务，改为优先后台运行（更简单、可见）。
-REM 如需安装为服务，请运行脚本前设置 PREFER_SERVICE=1
+REM Prefer background run over Windows service.
+REM Set PREFER_SERVICE=1 first to force service installation.
 if not defined PREFER_SERVICE set "PREFER_SERVICE=0"
 
-REM 跳转至主流程，避免直接落入后续子例程定义导致 goto :eof 退出
+REM Jump to main flow to avoid falling into subroutine definitions.
 goto :main_flow
 
-REM 安装 aiosmtpd
+REM Install aiosmtpd
 :install_aiosmtpd
     echo 安装 aiosmtpd...
     pip install aiosmtpd
     set SVCNAME=aiosmtpd
-    REM 使用绝对 python 路径避免服务环境中找不到 python
+    REM Absolute python path to avoid service env resolution issues
     for /f "delims=" %%P in ('where python 2^>nul') do set "PYEXE=%%P"
     if not defined PYEXE set "PYEXE=python"
     set ARGS=C:\fleximanage\aiosmtpd_launcher.py
     if not exist "C:\fleximanage" mkdir "C:\fleximanage"
     if not exist "C:\fleximanage\aiosmtpd.log" type nul > "C:\fleximanage\aiosmtpd.log" 2>nul
     if not exist "C:\fleximanage\aiosmtpd-error.log" type nul > "C:\fleximanage\aiosmtpd-error.log" 2>nul
-    REM 预先写出 aiosmtpd 启动包装脚本，避免在括号块中调用子标签
+    REM Pre-write start wrapper to avoid label calls inside parenthesis blocks
     >"C:\fleximanage\aiosmtpd_start.cmd" echo @echo off
     >>"C:\fleximanage\aiosmtpd_start.cmd" echo ^"%PYEXE%^" ^"%ARGS%^" 1^>^>^"C:\fleximanage\aiosmtpd-run.log^" 2^>^>^"C:\fleximanage\aiosmtpd-error.log^"
         if "%PREFER_SERVICE%"=="1" if defined NSSM (
-            REM 用户选择以服务形式运行且 NSSM 可用时注册服务
+            REM Register service when user requested and NSSM available
             echo PREFER_SERVICE=1 且检测到 NSSM，尝试注册为 Windows 服务...
             "%NSSM%" install %SVCNAME% "%PYEXE%" "%ARGS%"
             if %errorlevel% NEQ 0 (
@@ -133,20 +133,20 @@ REM 安装 aiosmtpd
                 echo aiosmtpd 服务未能启动，回退到后台启动。
                 goto :aiosmtpd_background_start
             )
-            REM 写出诊断信息以便问题排查
+            REM Write diagnostics for troubleshooting
             if exist "C:\Windows\system32\nssm.exe" C:\Windows\system32\nssm.exe dump aiosmtpd > C:\fleximanage\aiosmtpd-nssm-dump.txt 2>&1
             sc queryex aiosmtpd > C:\fleximanage\aiosmtpd-service-status.txt 2>&1
             if exist "%PYEXE%" (
                 "%PYEXE%" C:\fleximanage\aiosmtpd_env_report.py > C:\fleximanage\aiosmtpd-env-report.out 2>&1
             )
         ) else (
-            REM 默认行为：后台启动（更可靠，避免服务权限/环境问题）
+            REM Default: background start (simpler / avoids service env issues)
             call :aiosmtpd_background_start
         )
 :aiosmtpd_background_start
             setlocal enabledelayedexpansion
             echo 使用后台启动 aiosmtpd（PREFER_SERVICE!=1 或 NSSM 不可用）
-            REM 优先使用 PowerShell 查询监听 1025 的进程（返回 PID|Name|Path），若失败则回退到 netstat
+            REM Use PowerShell to query listener (PID|Name|Path); fallback to netstat
             set "EXIST_PID="
             set "EXIST_NAME="
             set "EXIST_PATH="
@@ -192,10 +192,9 @@ REM 安装 aiosmtpd
                 echo 端口 1025 未被占用，启动后台 launcher
                 start "aiosmtpd-fg" /b "C:\fleximanage\aiosmtpd_start.cmd"
             )
-        REM 等待 aiosmtpd 监听端口 1025（最多等待 15 秒）
-            REM 已在例程开头启用延迟展开
+        REM Wait for aiosmtpd to listen on 1025 (max 15s); delayed expansion already enabled
     >>"C:\fleximanage\aiosmtpd-debug.log" echo MARKER_AFTER_START_CHECK
-        REM 如果端口已被占用，找出占用的 PID 并检查它的进程名
+    REM If port in use identify PID and process name
     set LISTENER_PID=
     >>"C:\fleximanage\aiosmtpd-debug.log" echo MARKER_BEFORE_NETSTAT_CHECK
         for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":1025"') do set LISTENER_PID=%%p
@@ -247,7 +246,7 @@ REM 安装 aiosmtpd
         )
     )
         endlocal
-    REM 分支结束，返回主流程
+    REM Branch end; return to main flow
     goto :eof
 :install_mongodb
 echo 安装 MongoDB...
@@ -269,7 +268,7 @@ if %errorlevel% NEQ 0 (
     )
 )
 %CHOCO% install mongodb -y
-REM 配置副本集（3节点，端口 27017, 27018, 27019）
+REM Configure replica set (3 nodes ports 27017/27018/27019)
 echo 正在配置 MongoDB 副本集...
 set "MONGO_BASE=C:\ProgramData\MongoDB"
 set "MONGO_BIN=%ProgramFiles%\MongoDB\Server\8.2\bin"
@@ -352,7 +351,7 @@ echo 启动后查看 mongod 进程列表并记录于 C:\fleximanage\mongo-proces
 tasklist /FI "IMAGENAME eq mongod.exe" /FO LIST > C:\fleximanage\mongo-processes.txt 2>&1
 type C:\fleximanage\mongo-processes.txt
 echo 初始化副本集配置（最多重试 5 次）...
-REM 初始化副本集配置（最多重试 5 次）...
+REM Replica set init (up to 5 retries)
 set RETRY=0
 set SUCCESS=0
 set INIT_RS=rs.initiate({_id: 'rs', members: [{_id: 0, host: 'localhost:27017'}, {_id: 1, host: 'localhost:27018'}, {_id: 2, host: 'localhost:27019'}]})
@@ -428,7 +427,7 @@ if exist "%MONGO_EXE%" (
 )
 goto :continue_after_mongo
 
-REM 子例程：启动单个 mongod 实例（参数：端口）
+REM Subroutine: start one mongod instance (arg: port)
 :start_mongod
 setlocal
 set PORT=%1
@@ -471,7 +470,7 @@ echo MongoDB 服务名一般为 MongoDB，可用如下命令管理：
 echo sc start MongoDB
 echo sc stop MongoDB
 echo sc query MongoDB
-REM 分支结束，返回主流程
+REM Branch end; return main flow
 :: label to continue when choco not available
 :continue_after_mongo
 
@@ -512,7 +511,7 @@ echo Redis 服务名一般为 Redis，可用如下命令管理：
 echo sc start Redis
 echo sc stop Redis
 echo sc query Redis
-REM 分支结束，返回主流程
+REM Branch end; return main flow
 :: label to continue when choco not available
 :continue_after_redis
 
@@ -522,7 +521,7 @@ REM 分支结束，返回主流程
     if exist "%REDIS_LOG%" del /q "%REDIS_LOG%">nul 2>&1
     echo Redis diagnostic > "%REDIS_LOG%"
     echo ------------------ >> "%REDIS_LOG%"
-    REM 检查 choco 包是否已安装（如果 choco 可用），使用更简单的返回码判断
+    REM Check if choco package installed (simplified return code check)
     set "CHACO_REDIS="
     if not defined CHOCO for /f "delims=" %%x in ('where choco 2^>nul') do set "CHOCO=%%x"
     if defined CHOCO (
@@ -538,7 +537,7 @@ REM 分支结束，返回主流程
         echo Chocolatey: 未在本地包列表中找到 redis 或 choco 不可用 >> "%REDIS_LOG%"
         echo Chocolatey: 未在本地包列表中找到 redis 或 choco 不可用
     )
-    REM 查找 redis-server 可执行（choco 包名可能不同）
+    REM Locate redis-server executable (package name may differ)
     for /f "delims=" %%r in ('where redis-server 2^>nul') do set "REDIS_EXE=%%r"
     if not defined REDIS_EXE for /f "delims=" %%r in ('where redis-server.exe 2^>nul') do set "REDIS_EXE=%%r"
     if defined REDIS_EXE (
@@ -548,7 +547,7 @@ REM 分支结束，返回主流程
         echo 未找到 redis 可执行文件（redis-server/redis-server.exe） >> "%REDIS_LOG%"
         echo 未找到 redis 可执行文件（redis-server/redis-server.exe）
     )
-    REM 检查服务（常见服务名 Redis 或 RedisService）
+    REM Check service presence (Redis / RedisService)
     sc query Redis >nul 2>&1
     if %errorlevel% EQU 0 (
         sc query Redis | findstr /I "STATE" >> "%REDIS_LOG%"
@@ -565,7 +564,7 @@ REM 分支结束，返回主流程
             echo 未检测到 Redis 服务（Redis 或 RedisService）
         )
     )
-        REM 查找监听 6379 的 PID（使用 netstat），然后用 PowerShell 解析进程信息以避免 CSV/解析问题
+    REM Find PID on port 6379 then resolve name/path via PowerShell
     set "REDIS_PID="
     set "REDIS_PROC="
     set "REDIS_PATH="
@@ -613,7 +612,7 @@ REM 分支结束，返回主流程
     echo Redis 检查完成，诊断文件：%REDIS_LOG%
     goto :eof
 
-REM 服务管理
+REM Service management routines
 :service_manage
     set action=%1
     set svc=%2
@@ -631,10 +630,10 @@ if %errorlevel% EQU 0 (
     set "CHOCO="
 )
 
-REM 进入主流程
+REM Enter main flow
 goto :main_flow
 
-REM 主流程：顺序安装/检查各组件
+REM Main flow: install and verify components sequentially
 :main_flow
 echo TRACE: starting main flow > C:\fleximanage\install_trace.txt
 echo 自动安装全部服务...
@@ -657,9 +656,9 @@ echo 全部服务及 Node.js/npm 安装流程已完成！
 pause
 goto :report
 
-REM （已在文件顶部的主菜单执行过，此处删除重复的主菜单以避免混淆）
+REM (Duplicate main menu removed to avoid confusion)
 
-REM 安装 Node.js 和 npm 子例程
+REM Install Node.js & npm subroutine
 :install_nodejs
 echo 安装 Node.js 和 npm...
 where choco >nul 2>&1
@@ -679,7 +678,7 @@ if not defined CHOCO for /f "delims=" %%x in ('where choco 2^>nul') do set "CHOC
 if %errorlevel% NEQ 0 (
     echo Node.js 安装失败，请检查 Chocolatey 可用性或手动安装 Node.js
 )
-REM 更可靠的检测：优先定位 node/npm 的可执行路径并以安全方式运行检查。
+REM More reliable detection: locate node/npm executables then run version checks.
 for /f "delims=" %%N in ('where node 2^>nul') do set "NODE_EXE=%%N"
 if defined NODE_EXE (
     "%NODE_EXE%" -v >nul 2>&1 || echo 警告: 检测到 node (%NODE_EXE%) 但无法执行，请检查安装。
@@ -688,8 +687,8 @@ if defined NODE_EXE (
 )
 for /f "delims=" %%M in ('where npm 2^>nul') do set "NPM_CMD=%%M"
 if defined NPM_CMD (
-    REM 在 PowerShell 环境中，直接运行 `npm` 可能会触发执行策略并尝试运行 npm.ps1；
-    REM 使用 cmd /c 调用将优先执行 npm.cmd，从而避免 PowerShell 脚本执行策略问题。
+    REM In PowerShell invoking `npm` may hit execution policy (npm.ps1)
+    REM Use cmd /c to prefer npm.cmd and bypass policy scripts.
     cmd /c "\"%NPM_CMD%\" -v" >nul 2>&1 || echo 警告: 检测到 npm (%NPM_CMD%) 但运行失败；PowerShell 执行策略可能阻止 npm.ps1。请在 cmd 中运行 `npm -v` 或以管理员权限运行 PowerShell: `Set-ExecutionPolicy Bypass -Scope Process -Force` 然后重试。
 ) else (
     echo 警告: 未能检测到 npm 可执行文件，请在重启 shell 后检查安装。
@@ -716,4 +715,4 @@ goto :eof
 
 :end
 
-REM (移除 :do_start_aiosmtpd 子程序，改为统一使用预生成的外部 aiosmtpd_start.cmd 启动)
+REM (Removed :do_start_aiosmtpd; unified external aiosmtpd_start.cmd approach)
