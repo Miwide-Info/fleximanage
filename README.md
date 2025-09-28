@@ -37,6 +37,32 @@ FlexiManage requires the following to run:
 * Redis 5.0.5, running on port 6379
 * A mailer application or trapper of your choice, running on port 1025 (Such as [python mailtrap](https://pypi.org/project/mailtrap/))
 
+### Helper Installation Scripts (Optional Convenience)
+For development convenience this repository now includes shell scripts to provision local dependencies quickly:
+
+| Script | Purpose | Notes |
+|--------|---------|-------|
+| `install_mongodb.sh` | Downloads & configures MongoDB 4.0.9 replica set (3 members) on localhost ports 27017/27018/27019 | Idempotent; supports `STOP=1`, `STATUS=1`, `CLEAN=1` flags. Logs under `/var/log/mongodb`. |
+| `install_redis.sh` | Installs & configures Redis (systemd or sysv) on port 6379 | Detects init system; creates minimal config; ACL example user retained. |
+| `install_aiosmtpd.sh` | Sets up a lightweight SMTP sink using aiosmtpd on port 1025 | Supports systemd or init.d, virtualenv install, upgrade/uninstall flags. |
+
+Example usages:
+```bash
+# MongoDB replica set
+sudo ./install_mongodb.sh
+sudo ./install_mongodb.sh STATUS=1   # check status
+
+# Redis
+sudo ./install_redis.sh
+
+# aiosmtpd mail sink (default port 1025)
+sudo ./install_aiosmtpd.sh
+sudo ./install_aiosmtpd.sh UPGRADE=1           # upgrade aiosmtpd package
+sudo ./install_aiosmtpd.sh UNINSTALL=1         # remove service & install dir
+```
+
+These scripts are meant for local/dev environments; hardening for production (security, backups, monitoring) should be applied separately.
+
 ### Installing
 ##### Getting the source code:
 ```
