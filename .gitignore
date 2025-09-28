@@ -25,5 +25,4 @@ coverage/
 # tmp pki directory
 backend/tmp/openvpn_pki*
 
-# backeup
-frontend-react/*.*
+# (Removed) legacy experimental frontend-react/ directory cleaned up
