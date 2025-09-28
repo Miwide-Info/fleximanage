@@ -1,1 +1,0 @@
-this.mainDB.on('open', () => logger.info('MongoDB mainDB open event'));
