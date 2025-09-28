@@ -46,6 +46,8 @@ For development convenience this repository now includes shell scripts to provis
 | `scripts/install_redis.sh` | Installs & configures Redis (systemd or sysv) on port 6379 | Detects init system; creates minimal config; ACL example user retained. |
 | `scripts/install_aiosmtpd.sh` | Sets up a lightweight SMTP sink using aiosmtpd on port 1025 | Supports systemd or init.d, virtualenv install, upgrade/uninstall flags. |
 
+For deeper details (flags, safety notes, customization ideas) see `scripts/README.md`.
+
 Example usages:
 ```bash
 # MongoDB replica set
