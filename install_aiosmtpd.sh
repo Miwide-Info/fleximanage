@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echo "[DEPRECATED WARNING] This script has been moved to scripts/install_aiosmtpd.sh. Please invoke that path instead." >&2
 
 # aiosmtpd Mail Server Installation & Management Script (virtual environment based)
 # 功能: 安装/更新 aiosmtpd, 创建 systemd 或 sysv(init.d) 服务, 开机自启, 监听默认端口 1025

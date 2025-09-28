@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "[DEPRECATED WARNING] This script has been moved to scripts/install_mongodb.sh. Please invoke that path instead." >&2
 set -euo pipefail
 
 # --------------------------
