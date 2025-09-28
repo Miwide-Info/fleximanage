@@ -18,6 +18,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const mongoConns = require('../mongoConns.js')();
+const { SERVICE_TYPES } = require('../constants/serviceTypes');
 
 /**
  * Accounts Schema
@@ -59,12 +60,14 @@ const Accounts = new Schema({
   serviceType: {
     type: String,
     required: true,
+    enum: SERVICE_TYPES,
+    // 保留原有正则以提供更详细的错误信息（即便 enum 先失败也能提示格式）
     match: [
-      /^[a-z0-9 -]{1,20}$/i,
-      'Service type should contain letters digits space or dash characters'
+      /^[a-z0-9 /()_-]{2,30}$/i,
+      'Service type may contain letters, numbers, spaces, / ( ) _ -'
     ],
     minlength: [2, 'Service type length must be at least 2'],
-    maxlength: [20, 'Service type length must be at most 20']
+    maxlength: [30, 'Service type length must be at most 30']
   },
   // number of sites planned to be used
   numSites: {

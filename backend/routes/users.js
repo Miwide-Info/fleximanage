@@ -456,16 +456,29 @@ router.route('/reset-password')
 // or whether he needs to pass another identification factor (like 2FA)
 router.route('/login')
   .options(cors.corsWithOptions, (req, res) => { res.sendStatus(200); })
-  .post(cors.corsWithOptions, auth.verifyUserLocal, async (req, res) => {
-    // if user enabled 2fa or account forces using it- send login process token
-    // else, allow login without mfa
-    const isUserEnabledMfa = req.user?.mfa?.enabled;
-    const isAccountForcesIt = req.user?.defaultAccount?.forceMfa;
-    if (isUserEnabledMfa || isAccountForcesIt) {
-      const token = await getLoginProcessToken(req.user);
-      res.status(200).json({ name: req.user.name, token });
-    } else {
-      return await sendJwtToken(req, res, false);
+  .post(cors.corsWithOptions, auth.verifyUserLocal, async (req, res, next) => {
+    try {
+      // Optional captcha verification (only enforced if captchaKey configured)
+      // Frontend sends field 'captcha'. If server key empty (dev) recaptcha util returns true.
+      if (configs.get('captchaKey') && configs.get('captchaKey') !== '') {
+        const passed = await reCaptcha.verifyReCaptcha(req.body.captcha || '');
+        if (!passed) {
+          return next(createError(500, 'Wrong Captcha'));
+        }
+      }
+
+      // if user enabled 2fa or account forces using it- send login process token
+      // else, allow login without mfa
+      const isUserEnabledMfa = req.user?.mfa?.enabled;
+      const isAccountForcesIt = req.user?.defaultAccount?.forceMfa;
+      if (isUserEnabledMfa || isAccountForcesIt) {
+        const token = await getLoginProcessToken(req.user);
+        res.status(200).json({ name: req.user.name, token });
+      } else {
+        return await sendJwtToken(req, res, false);
+      }
+    } catch (e) {
+      return next(e);
     }
   });
 

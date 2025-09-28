@@ -9,6 +9,7 @@ This directory contains convenience shell scripts to quickly provision local dev
 | `install_mongodb.sh` | Install & launch MongoDB 4.0.9 as a 3 member replica set on ports 27017/27018/27019 | `STATUS=1` show roles; `STOP=1` stop processes; `CLEAN=1` wipe data & restart; `OPLOG_SIZE_MB=256` override oplog size |
 | `install_redis.sh` | Install & configure Redis (systemd or sysv) on port 6379 | (none yet – future: `REDIS_PASSWORD=...`) |
 | `install_aiosmtpd.sh` | Lightweight SMTP sink on port 1025 using `aiosmtpd` (captures & logs emails) | `UNINSTALL=1`, `REINSTALL=1`, `UPGRADE=1`, `AIOSMTPD_VERSION=x.y.z`, `PORT=1025` |
+| `build_all.sh` | Build frontend (React) then (optionally) start backend | `START_BACKEND=1` also runs backend after build |
 
 ## Quick Start
 

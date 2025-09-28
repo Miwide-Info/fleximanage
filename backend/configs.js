@@ -23,6 +23,37 @@
  ****************************************************************************/
 /* eslint-disable max-len */
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
+
+// Dynamic detection of a frontend build directory. Priority order:
+// 1. ../frontend/build (new open-source React UI location)
+// 2. client/build      (legacy path)
+// 3. public            (very old fallback / minimal assets)
+// The chosen value becomes the default "clientStaticDir" for environments that do not
+// explicitly override it (most env overrides below DO set ../frontend/build already).
+let detectedClientStaticDir = 'public';
+try {
+  const candidates = [
+    path.join(__dirname, '..', 'frontend', 'build', 'index.html'),
+    path.join(__dirname, 'client', 'build', 'index.html')
+  ];
+  for (const full of candidates) {
+    if (fs.existsSync(full)) {
+      // Store relative path if possible (for nicer logs); fall back to absolute.
+      if (full.includes(path.join('..', 'frontend', 'build'))) {
+        detectedClientStaticDir = '../frontend/build';
+      } else if (full.includes(path.join('client', 'build'))) {
+        detectedClientStaticDir = 'client/build';
+      } else {
+        detectedClientStaticDir = full; // absolute fallback
+      }
+      break;
+    }
+  }
+} catch (e) {
+  // Non-fatal; will fall back to 'public'. Intentionally quiet to avoid noisy boot logs.
+}
 // Use 127.0.0.1 instead of 'localhost' to avoid cases where localhost resolves to ::1 (IPv6) while mongod listens only on IPv4
 const hostname = process.env.MONGO_HOST || '127.0.0.1';
 const configEnv = {
@@ -62,9 +93,9 @@ const configEnv = {
     jobRetainTimeout: 604800000,
     // Key used for device tokens, override default with environment variable DEVICE_SECRET_KEY
     deviceTokenSecretKey: 'abcdefg1234567',
-    // Key used to validate google captcha token, generated at https://www.google.com/u/1/recaptcha/admin/create
-    // Default value is not set, which only validate the client side captcha
-    captchaKey: '',
+  // Key used to validate google captcha token (server secret). Can be supplied via env CAPTCHA_SECRET_KEY.
+  // Empty string means backend will NOT verify with Google (dev convenience) and will trust client side.
+  captchaKey: process.env.CAPTCHA_SECRET_KEY || '',
     // Mongo main database
     mongoUrl: `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexiwan?replicaSet=rs`,
     // Mongo analytics database
@@ -136,8 +167,8 @@ const configEnv = {
     agentBroker: ['local.flexiwan.com:3443'],
     // Whitelist of allowed domains for CORS checks
     corsWhiteList: ['http://local.flexiwan.com:3000', 'https://local.flexiwan.com:3000', 'https://local.flexiwan.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
-    // Client static root directory
-    clientStaticDir: 'public',
+  // Client static root directory (auto-detected: prefers production build if exists)
+  clientStaticDir: detectedClientStaticDir,
     // Mgmt-Agent protocol version
     agentApiVersion: '6.0.0',
     // Mgmt log files
@@ -242,8 +273,15 @@ const configEnv = {
     contactUsUrl: 'mailto:yourfriends@flexiwan.com',
     // Repository setup URL
     agentRepositoryUrl: 'https://deb.flexiwan.com/setup',
-    // Captcha client key for flexiwan domain
-    captchaSiteKey: '6LfkP8IUAAAAABt2dxrb9U2WzxonxJlhs0_2Hadi',
+  // Captcha site (public) key exposed to client. Override with env CAPTCHA_SITE_KEY.
+  // NOTE: Previously a hard-coded fallback key was shipped which could trigger
+  // "Invalid domain for site key" errors in development when the domain was not
+  // authorized for that key. We now default to an empty string so the widget
+  // simply does not render unless the operator explicitly supplies a key.
+  // For local development you may use Google's public TEST site key:
+  //   6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI  (paired secret: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe)
+  // Do NOT use the test pair in production – always register your own domain keys.
+  captchaSiteKey: process.env.CAPTCHA_SITE_KEY || '',
     // HTML content of the UI about page
     aboutContent: '',
     // UI URL for feedback
@@ -265,7 +303,8 @@ const configEnv = {
   },
   // Override for development environment, default environment if not specified
   development: {
-    clientStaticDir: 'client/build',
+    // Updated to serve the new React UI (OpenSource-OpenNetworking) located at /frontend
+    clientStaticDir: '../frontend/build',
     mailerBypassCert: true,
     SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest-testing',
     userTokenExpiration: 604800,
@@ -292,7 +331,7 @@ const configEnv = {
     redirectHttpsPort: 443,
     agentBroker: ['app.flexiwan.com:443'],
     validateOpenAPIResponse: false,
-    clientStaticDir: 'client/build',
+  clientStaticDir: '../frontend/build',
     // 'billingConfigSite': 'flexiwan-test',
     // 'billingDefaultPlan': 'enterprise',
     // 'useFlexiBilling': true,
@@ -314,7 +353,7 @@ const configEnv = {
     shouldRedirectHttps: false,
     redirectHttpsPort: 443,
     validateOpenAPIResponse: false,
-    clientStaticDir: 'client/build',
+  clientStaticDir: '../frontend/build',
     billingConfigSite: 'flexiwan',
     billingDefaultPlan: 'enterprise',
     useFlexiBilling: true,
@@ -333,7 +372,7 @@ const configEnv = {
     kuePrefix: 'mngdeviceq',
     agentBroker: ['manage.flexiwan.com:443'],
     validateOpenAPIResponse: false,
-    clientStaticDir: 'client/build',
+  clientStaticDir: '../frontend/build',
     logFilePath: '/var/log/flexiwan/flexiwan.log',
     reqLogFilePath: '/var/log/flexiwan/flexiwanReq.log',
     billingConfigSite: 'flexiwan',
@@ -357,7 +396,7 @@ const configEnv = {
     unreadNotificationPeriod: 300000,
     userRefreshTokenExpiration: 86400,
     agentBroker: ['appqa01.flexiwan.com:443'],
-    clientStaticDir: 'client/build',
+  clientStaticDir: '../frontend/build',
     logFilePath: '/var/log/flexiwan/flexiwan.log',
     reqLogFilePath: '/var/log/flexiwan/flexiwanReq.log',
     billingConfigSite: 'flexiwan-test',
@@ -382,7 +421,7 @@ const configEnv = {
     unreadNotificationPeriod: 300000,
     userRefreshTokenExpiration: 86400,
     agentBroker: ['appqa02.flexiwan.com:443'],
-    clientStaticDir: 'client/build',
+  clientStaticDir: '../frontend/build',
     logFilePath: '/var/log/flexiwan/flexiwan.log',
     reqLogFilePath: '/var/log/flexiwan/flexiwanReq.log',
     billingConfigSite: 'flexiwan-test',

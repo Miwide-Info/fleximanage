@@ -24,22 +24,24 @@ class MongoConns {
     this.getMainDB = this.getMainDB.bind(this);
     this.getAnalyticsDB = this.getAnalyticsDB.bind(this);
 
-    // 调整连接参数：
-    // 1. 将 serverSelectionTimeoutMS 提高到 15000，避免副本集刚启动选举时出现大量 "Server selection timed out after 5000 ms" 噪音。
-    // 2. 增加 connectTimeoutMS 作为 TCP 连接建立上限，防止某些网络场景长期阻塞。
-    // 3. 仍然强制 IPv4 以避免 ::1 / 解析差异导致的额外重试。
+  // Connection tuning rationale:
+  // 1. Raise serverSelectionTimeoutMS to 15000 to reduce noisy "Server selection timed out after 5000 ms"
+  //    warnings when the replica set is just starting and electing a PRIMARY.
+  // 2. Add a larger connectTimeoutMS as an upper bound for establishing TCP connections so we do not
+  //    block for a long time under certain network conditions.
+  // 3. Force IPv4 to avoid extra retries due to ::1 / DNS resolution differences.
     const commonConnOptions = {
       useNewUrlParser: true,
       useCreateIndex: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 15000,
-      // 提高 connectTimeoutMS，避免冷启动阶段 TCP 握手慢导致早期 "connection timed out" 日志
+      // Increase connectTimeoutMS to avoid premature "connection timed out" logs when TCP handshakes are slow during cold start
       connectTimeoutMS: 15000,
       family: 4 // Force IPv4
     };
 
-    // 连接初始宽限期：在副本集刚刚启动时，可能需要几秒完成 PRIMARY 选举。
-    // 在宽限期内首次失败只打 warn 而不是 error，降低日志噪音；超过宽限期再按 error。
+    // Initial connection grace period: right after the replica set starts it may take a few seconds to elect a PRIMARY.
+    // During the grace window the first failures are logged as warn (to reduce noise); after the grace window we escalate to error.
     const INITIAL_CONNECT_GRACE_MS = parseInt(process.env.MONGO_INITIAL_GRACE_MS || '20000', 10);
     const startTs = Date.now();
     const firstFailure = { mainDB: false, analyticsDB: false, vpnDB: false };

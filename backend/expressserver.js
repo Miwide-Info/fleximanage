@@ -149,9 +149,9 @@ class ExpressServer {
     // HTTPS redirect only if configured AND https server actually initialized
     this.app.all('*', (req, res, next) => {
       const redirectDesired = configs.get('shouldRedirectHttps', 'boolean');
-      // 豁免条件：
-      // 1. 预检 OPTIONS
-      // 2. API 调用 (req.url 以 /api/ 开头) —— 避免 axios/fetch 在 307 + 跨 scheme 时出现循环 / 中断
+      // Exemptions:
+      // 1. Preflight OPTIONS requests
+      // 2. API calls (URLs starting with /api/) — avoid redirect loops / interruptions when axios/fetch faces 307 across schemes
       if (req.method === 'OPTIONS' || req.url.startsWith('/api/')) return next();
       if (!redirectDesired || !this.httpsEnabled || req.secure || req.url.startsWith('/.well-known/acme-challenge')) {
         return next();
@@ -197,7 +197,22 @@ class ExpressServer {
 
     // Routes allowed without authentication
     this.app.get('/', (req, res) => this.sendIndexFile(req, res));
-    this.app.use(express.static(path.join(__dirname, configs.get('clientStaticDir'))));
+    const staticDirSetting = configs.get('clientStaticDir');
+    const staticPath = path.join(__dirname, staticDirSetting);
+    if (fs.existsSync(staticPath)) {
+      logger.info('Serving static UI directory', { params: { staticPath, configured: staticDirSetting } });
+      this.app.use(express.static(staticPath));
+    } else {
+      // Provide actionable hints to operator
+      const hints = [];
+      hints.push('Build not found at expected path: ' + staticPath);
+      hints.push('To generate it run: (cd frontend && npm install && npm run build)');
+      if (!staticDirSetting.includes('frontend')) {
+        hints.push('Currently configured clientStaticDir="' + staticDirSetting + '"');
+        hints.push('If you intended to use the new React UI, ensure clientStaticDir points to ../frontend/build');
+      }
+      logger.warn('Static UI directory not found; skipping React build serving', { params: { staticPath, configured: staticDirSetting, hints } });
+    }
 
     // Explicit favicon handler to avoid noisy "Route not found" logs when browser auto-requests it
     this.app.get('/favicon.ico', (req, res) => {
@@ -241,6 +256,40 @@ class ExpressServer {
 
     this.app.get('/api/version', (req, res) => res.json({ version }));
     this.app.get('/api/restServers', (req, res) => res.json({ version }));
+
+    // Public runtime configuration endpoint (no auth) – exposes only safe, non-secret fields
+    // Allows frontend (e.g. Login page) to fetch captchaSiteKey at runtime without rebuild.
+    this.app.get('/api/public/config', (req, res) => {
+      try {
+        // Expose whether backend will actually enforce captcha verification.
+        // Backend verifies only when captchaKey (secret) is non-empty. Frontend can use this
+        // to decide if absence/failure of widget should block login or just warn.
+        const captchaSecretConfigured = !!configs.get('captchaKey');
+        res.json({
+          captchaSiteKey: configs.get('captchaSiteKey'),
+          captchaEnforced: captchaSecretConfigured,
+          companyName: configs.get('companyName'),
+          allowUsersRegistration: configs.get('allowUsersRegistration', 'boolean')
+        });
+      } catch (e) {
+        logger.error('Failed to serve public config', { params: { message: e.message }, req });
+        res.status(500).json({ error: 'Public config unavailable' });
+      }
+    });
+
+    // Public meta data (static enums / roles) for frontend dynamic rendering
+    this.app.get('/api/public/meta', (req, res) => {
+      try {
+        const { SERVICE_TYPES } = require('./constants/serviceTypes');
+        const { preDefinedPermissions } = require('./models/membership');
+        // Only expose the keys of preDefinedPermissions (not the raw bitmasks per resource)
+        const permissionPresets = Object.keys(preDefinedPermissions);
+        res.json({ serviceTypes: SERVICE_TYPES, permissionPresets });
+      } catch (e) {
+        logger.error('Failed to serve public meta', { params: { message: e.message }, req });
+        res.status(500).json({ error: 'Public meta unavailable' });
+      }
+    });
 
     this.app.use(cors.corsWithOptions);
     this.app.use(auth.verifyUserJWT);

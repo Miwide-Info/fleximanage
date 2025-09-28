@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BRAND_NAME } from '../constants/branding';
 import { Row, Col, Card, Alert } from 'react-bootstrap';
 import { FaServer, FaNetworkWired, FaRoute, FaExclamationTriangle } from 'react-icons/fa';
 import './Home.css';
@@ -86,7 +87,7 @@ const Home = () => {
     <div className="home-page">
       <div className="page-header">
         <h2>Dashboard</h2>
-        <p className="text-muted">Welcome to FlexiManage</p>
+  <p className="text-muted">Welcome to {BRAND_NAME}</p>
       </div>
 
       <Row className="stats-row">

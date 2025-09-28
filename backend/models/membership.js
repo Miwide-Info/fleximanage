@@ -240,8 +240,35 @@ const preDefinedPermissions = {
     qospolicies: setPermission(1, 0, 0, 0),
     firewallpolicies: setPermission(1, 0, 0, 0),
     vrrp: setPermission(1, 0, 0, 0)
-  }
+  },
+  // Super admin (not assigned via membership role; triggered by user.admin === true).
+  super_admin: {}
 };
+
+// Populate super_admin dynamically with full permissions (15) for all existing keys except itself
+(() => {
+  const sample = preDefinedPermissions.account_owner; // has full coverage of keys
+  const full = {};
+  Object.keys(sample).forEach(k => { full[k] = setPermission(1,1,1,1); });
+  preDefinedPermissions.super_admin = full;
+})();
+
+// Simple in-memory TTL cache for user permissions
+const _permsCache = new Map(); // key -> { perms, exp }
+const PERMS_CACHE_TTL_MS = 30 * 1000; // 30s
+
+function _cacheKey(user) {
+  const acc = user?.defaultAccount?._id?.toString() || 'na';
+  const org = user?.defaultOrg?._id?.toString() || 'na';
+  return `${user?._id || 'nouser'}|${acc}|${org}`;
+}
+
+function invalidateUserPermissions(userId) {
+  if (!userId) return;
+  for (const k of _permsCache.keys()) {
+    if (k.startsWith(userId.toString() + '|')) _permsCache.delete(k);
+  }
+}
 
 /**
  * Membership Database Schema
@@ -294,7 +321,17 @@ const membership = mongoConns.getMainDB().model('membership', Membership);
  */
 const getUserPermissions = (user) => {
   const p = new Promise((resolve, reject) => {
+    // If super admin flag
+    if (user && user.admin === true) {
+      return resolve({ ...preDefinedPermissions.super_admin });
+    }
+
     const perms = { ...preDefinedPermissions.none };
+    const key = _cacheKey(user);
+    const cached = _permsCache.get(key);
+    if (cached && cached.exp > Date.now()) {
+      return resolve({ ...cached.perms });
+    }
 
     if (!user || !user.defaultAccount || !user.defaultAccount._id) { return resolve(perms); }
 
@@ -323,6 +360,8 @@ const getUserPermissions = (user) => {
             });
           });
         }
+        // store in cache
+        _permsCache.set(key, { perms: { ...perms }, exp: Date.now() + PERMS_CACHE_TTL_MS });
         return resolve(perms);
       })
       .catch((err) => {
@@ -364,5 +403,6 @@ module.exports = {
   setPermission: setPermission,
   preDefinedPermissions: preDefinedPermissions,
   getUserPermissions: getUserPermissions,
-  validatePermissionCombination: validatePermissionCombination
+  validatePermissionCombination: validatePermissionCombination,
+  invalidateUserPermissions: invalidateUserPermissions
 };

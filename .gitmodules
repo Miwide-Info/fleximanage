@@ -1,9 +1,20 @@
+# NOTE:
+# The following submodules point to proprietary (non-open-source) components of the original
+# flexiWAN SaaS offering. They are kept here ONLY for reference so that forks understand the
+# original structure. They are NOT required to run the open backend + the newly developed
+# open React UI located in ./frontend (project name: OpenSource-OpenNetworking).
+#
+# If you do not have access to these private repositories you can safely ignore the
+# submodule initialization errors or comment out these sections entirely.
+
 [submodule "client"]
 	path = client
 	url = git@gitlab.com:flexiwangroup/fleximanageui.git
+
 [submodule "backend/billing"]
 	path = backend/billing
 	url = git@gitlab.com:flexiwangroup/flexibilling.git
+
 [submodule "vpnportal"]
 	path = vpnportal
 	url = git@gitlab.com:flexiwangroup/flexivpnportal.git

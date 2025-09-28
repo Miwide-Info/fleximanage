@@ -38,9 +38,9 @@ class Mailer {
       service: 'local',
       host: host,
       port: port,
-      // nodemailer 在 debug=true 时会调用其内部 logger，传入的 logger 需要实现 debug/info 形式。
-      // 之前直接把我们的 winston 包装 logger 作为 logger 传入，并且 nodemailer 会以对象作为 message 调用，
-      // 导致控制台出现 "[object Object]"。这里包一层，将对象序列化为 params。
+  // When debug=true nodemailer invokes its internal logger; the provided logger must implement debug/info/etc.
+  // Previously we passed our wrapped winston logger directly and nodemailer sometimes called it with an object as the message,
+  // producing "[object Object]" in the console. Wrap here to serialize objects into params cleanly.
       logger: {
         debug: (msg, ...rest) => logger.debug('mailer', { params: { msg, rest } }),
         info: (msg, ...rest) => logger.info('mailer', { params: { msg, rest } }),

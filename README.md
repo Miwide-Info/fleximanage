@@ -17,14 +17,47 @@ Our hosted service https://manage.flexiwan.com provides a free access to the fle
 ## What is included in this repository
 
 The flexiManage backend component provides REST API for managing the flexiWAN network, configuring and connecting to the flexiWAN flexiEdge devices. 
-The repository includes two git submodules which are used by the flexiWAN SaaS service and are not open. 
+The repository historically referenced several git submodules used by the hosted flexiWAN SaaS service that are **not open source**:
 
-When pulling the flexiManage repository, 
-these submodules would be seen as an empty directory:
-* client - a git submodule for the flexiWAN SaaS UI. The UI provides the user side logic and design for managing the network. It uses REST to access flexiManage
-* backend/billing - a git submodule for managing the flexiWAN SaaS billing
+* `client` – original proprietary flexiWAN SaaS UI
+* `backend/billing` – billing related service integration
+* `vpnportal` – VPN portal web component
 
-These submodules are not required for running the backend serivce and are used for the UI and Billing additions on top of flexiManage.
+If you clone this public repository without credentials for those private modules they will appear as empty directories (or git will warn during submodule init). That is expected and harmless for local open-source usage.
+
+These submodules are NOT required for running the open backend service. Instead, this fork / distribution introduces a brand new open React Web UI located in the `frontend/` directory (project name: **OpenSource-OpenNetworking**), developed specifically against the open flexiManage REST APIs.
+
+### OpenSource-OpenNetworking Frontend
+
+The new frontend replaces the closed-source `client` submodule. Key points:
+
+* Location: `./frontend`
+* Build output served by the backend from `frontend/build` (backend config updated: `clientStaticDir` -> `../frontend/build` per environment).
+* Technology: React 18, React Router, Axios, Bootstrap 5.
+* API Base: Defaults to relative `/api` (dev proxy); override with `REACT_APP_API_URL`.
+
+Quick start for the open UI:
+```bash
+cd frontend
+npm install
+npm run build   # produces ./frontend/build
+```
+Then start backend (in another shell):
+```bash
+cd backend
+npm install
+npm start
+```
+Browse to: https://local.flexiwan.com:3443 (or configured host/port) — backend will serve the React app if the build directory exists.
+
+Development (hot reload):
+```bash
+cd frontend
+npm start
+```
+The dev server will proxy API calls to the backend (configure `proxy` in `package.json` or set `REACT_APP_API_URL`).
+
+If you prefer not to have dangling proprietary submodule references you may comment out or delete their entries in `.gitmodules`; they are retained here solely for transparency with respect to the original upstream structure.
 To experience the complete flexiWAN system, open a free account on our [hosted system](https://flexiwan.com/pricing).
 
 ## Install and use flexiManage locally
@@ -103,6 +136,88 @@ Check the response header and use the Refresh-JWT as bearer token for any REST A
 Refresh-JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1ZTh...TlNo
 ```
 Check the documentation REST API section for more details.  You can create an access-key for your account API key.
+
+### Enabling Google reCAPTCHA (Login & Registration)
+
+The backend now supports Google reCAPTCHA v2 ("I'm not a robot" checkbox) for both registration and login.
+
+1. Create keys at: https://www.google.com/recaptcha/admin/create (choose v2 -> "I'm not a robot" checkbox).
+2. Set environment variables (server side):
+```
+export CAPTCHA_SECRET_KEY="<YOUR_SECRET_KEY>"
+export CAPTCHA_SITE_KEY="<YOUR_SITE_KEY>"
+```
+3. (Optional) Copy `.env.example` to `.env` and populate values; use a process manager or shell export to load them before `npm start`.
+4. Frontend development start or build must receive the site key so the widget renders:
+```
+REACT_APP_RECAPTCHA_SITE_KEY=$CAPTCHA_SITE_KEY npm start
+# or
+REACT_APP_RECAPTCHA_SITE_KEY=$CAPTCHA_SITE_KEY npm run build
+```
+5. After setting keys, the login and register forms will require a successful captcha before sending credentials.
+
+Behavior notes:
+* If `CAPTCHA_SECRET_KEY` is empty, backend treats captcha as always valid (development convenience).
+* If site key is present on frontend but secret key left empty, the widget shows but server will not verify (still acceptable for local dev).
+* On failure backend responds with HTTP 500 and body `{ error: "Wrong Captcha" }`.
+
+Test / Development Keys:
+Google provides universal TEST keys for reCAPTCHA v2 checkbox that work on any hostname and always validate.
+
+Site key (public): `6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI`
+
+Secret key (server): `6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
+
+Use these ONLY for local development. Do NOT deploy them to production – they are publicly known.
+
+Fallback Key Removal:
+Earlier a hard-coded example site key was shipped in `configs.js`. That default has been removed; if you do not set `CAPTCHA_SITE_KEY` the widget simply will not render (avoiding confusing "Invalid domain for site key" errors). Supply either your real domain key or the Google test key above for local work.
+
+Security tip: NEVER commit real keys. Only store them in environment variables or secret managers.
+
+### Service Types Enum & Public Meta Endpoint
+
+The backend now defines a canonical serviceType enumeration in `backend/constants/serviceTypes.js`:
+
+```
+MSP/Service provider
+Systems Integrator (SI)
+Value Added Reseller (VAR)
+Telco
+SaaS provider
+```
+
+The `accounts` schema enforces `enum` + relaxed formatting (letters, numbers, space, `/()_-`).
+
+Frontend registration form consumes a synchronized list (`frontend/src/constants/serviceTypes.js`).
+
+At runtime, clients can fetch the list (and permission preset keys) without rebuilding via:
+
+```
+GET /api/public/meta
+=> { "serviceTypes": [...], "permissionPresets": ["none", "account_owner", ...] }
+```
+
+### Permission System (Summary)
+
+Permissions are bitmasks per resource (get/post/put/del). Predefined sets live in `backend/models/membership.js` under `preDefinedPermissions`:
+
+- account_owner / account_manager / account_viewer
+- group_manager / group_viewer
+- organization_manager / organization_viewer
+- none
+- super_admin (auto-expanded full permissions; not granted via membership, only when `user.admin === true`).
+
+`GET /api/public/meta` exposes only the preset names (no raw bitmasks) for safe UI display.
+
+### Super Admin
+
+If a user document has `admin: true`, the system returns a dynamically generated `super_admin` permission set (full rights on all resources). This avoids hardcoding privileged bitmasks in multiple places.
+
+### Permission Caching
+
+User permissions are cached in-memory for 30 seconds (keyed by userId + defaultAccount + defaultOrg). A helper `invalidateUserPermissions(userId)` is exported for future hooks after membership changes.
+
 
 ### Documentation
 For full documentation of flexiManage, please refer to [flexiManage documentation](https://docs.flexiwan.com/management/management-login.html).

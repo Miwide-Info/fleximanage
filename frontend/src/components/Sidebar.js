@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BRAND_NAME } from '../constants/branding';
 import { NavLink } from 'react-router-dom';
 import { Nav } from 'react-bootstrap';
 import {
@@ -48,7 +49,7 @@ const Sidebar = ({ collapsed }) => {
   return (
     <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
-        <h3 className="brand">FlexiManage</h3>
+  <h3 className="brand">{BRAND_NAME}</h3>
       </div>
       <Nav className="flex-column sidebar-nav">
         {menuItems.map(item => {
