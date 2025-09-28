@@ -1,69 +1,202 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# aiosmtpd Mail Server Installation and Configuration Script (using virtual environment)
-# Function: Install aiosmtpd, create system service, set auto-start on boot, listen on port 1025
+# aiosmtpd Mail Server Installation & Management Script (virtual environment based)
+# 功能: 安装/更新 aiosmtpd, 创建 systemd 或 sysv(init.d) 服务, 开机自启, 监听默认端口 1025
+# NOTE: Comments already in English elsewhere; keeping one Chinese summary line per requirement from user (code stays English).
 
-set -e  # Exit immediately if any command fails
+set -euo pipefail
 
-# Configuration variables
-SERVICE_NAME="aiosmtpd"
-USER="aiosmtpd"
-GROUP="aiosmtpd"
-PORT="1025"
+#############################################
+# Configurable variables (can override via KEY=VALUE before/after script name)
+#############################################
+SERVICE_NAME="aiosmtpd"          # Service unit / init.d script name
+USER="aiosmtpd"                  # System user running the service
+GROUP="aiosmtpd"                 # System group
+PORT="1025"                      # SMTP listen port
 INSTALL_DIR="/opt/aiosmtpd_server"
 VENV_DIR="$INSTALL_DIR/venv"
-LOG_DIR="/fleximanage/logs"
-SCRIPT_NAME="aiosmtpd_server.py"
+LOG_DIR="/fleximanage/logs"      # Central logs directory (shared by project)
+SCRIPT_NAME="aiosmtpd_server.py" # Python server script filename
+PYTHON_BIN="python3"             # Python interpreter
+AIOSMTPD_VERSION=""             # If set, install exact version (e.g. 1.4.5). Otherwise latest.
+
+# Action flags (override: UNINSTALL=1, REINSTALL=1, UPGRADE=1)
+UNINSTALL="0"
+REINSTALL="0"
+UPGRADE="0"
+
+#############################################
+# Parse KEY=VALUE style arguments
+#############################################
+for arg in "$@"; do
+    if [[ "$arg" == *=* ]]; then
+        key="${arg%%=*}"; val="${arg#*=}"; export "$key"="$val" || true
+    fi
+done
+
+# Re-read in case user exported externally
+SERVICE_NAME=${SERVICE_NAME}
+USER=${USER}
+GROUP=${GROUP}
+PORT=${PORT}
+INSTALL_DIR=${INSTALL_DIR}
+VENV_DIR=${VENV_DIR}
+LOG_DIR=${LOG_DIR}
+SCRIPT_NAME=${SCRIPT_NAME}
+PYTHON_BIN=${PYTHON_BIN}
+AIOSMTPD_VERSION=${AIOSMTPD_VERSION}
+UNINSTALL=${UNINSTALL}
+REINSTALL=${REINSTALL}
+UPGRADE=${UPGRADE}
+
+#############################################
+# Logging helpers
+#############################################
+log() { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*"; }
+info() { log "INFO: $*"; }
+warn() { log "WARN: $*" >&2; }
+err()  { log "ERROR: $*" >&2; }
+die()  { err "$1"; exit 1; }
+
+usage() {
+    cat <<USAGE
+Usage: sudo ./install_aiosmtpd.sh [KEY=VALUE ...]
+
+Actions (flags):
+    UNINSTALL=1          Remove service + install directory (keeps logs)
+    REINSTALL=1          Force recreate venv & reinstall aiosmtpd
+    UPGRADE=1            Pip install --upgrade aiosmtpd inside existing venv
+
+Config overrides:
+    PORT=1025            Listening port
+    INSTALL_DIR=/opt/aiosmtpd_server
+    LOG_DIR=/fleximanage/logs
+    AIOSMTPD_VERSION=1.4.5  Pin specific version
+    PYTHON_BIN=python3
+
+Examples:
+    sudo ./install_aiosmtpd.sh PORT=2525
+    sudo ./install_aiosmtpd.sh UPGRADE=1
+    sudo ./install_aiosmtpd.sh UNINSTALL=1
+    sudo ./install_aiosmtpd.sh REINSTALL=1 AIOSMTPD_VERSION=1.4.5
+USAGE
+}
+
+if [[ "${HELP:-0}" == "1" ]]; then usage; exit 0; fi
 
 # Check if running as root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "This script must be run as root. Please run with sudo."
-    exit 1
+        die "This script must be run as root (sudo)."
 fi
 
-# Install necessary dependencies
-echo "Installing necessary system dependencies..."
+# Detect init system
+IS_SYSTEMD=0
+if [[ -d /run/systemd/system ]] || [[ $(ps -p 1 -o comm= 2>/dev/null) == systemd ]]; then
+    IS_SYSTEMD=1
+fi
+
+# Handle UNINSTALL early
+if [[ "$UNINSTALL" == "1" ]]; then
+    info "UNINSTALL=1 requested. Stopping & removing service..."
+    if [[ $IS_SYSTEMD -eq 1 ]]; then
+        systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+        systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+        rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
+        systemctl daemon-reload || true
+    else
+        service "$SERVICE_NAME" stop 2>/dev/null || true
+        rm -f "/etc/init.d/${SERVICE_NAME}" || true
+    fi
+    if [[ -d "$INSTALL_DIR" ]]; then
+        rm -rf "$INSTALL_DIR"
+        info "Removed $INSTALL_DIR"
+    fi
+    info "Uninstall complete. Logs retained at $LOG_DIR (not removed)."
+    exit 0
+fi
+
+info "Installing system dependencies (python + venv tools)..."
 if command -v apt-get &> /dev/null; then
-    # Debian/Ubuntu
-    apt-get update
-    apt-get install -y python3 python3-pip python3-venv
+        apt-get update -y
+        DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip python3-venv
 elif command -v yum &> /dev/null; then
-    # CentOS/RHEL
-    yum install -y python3 python3-pip
+        yum install -y python3 python3-pip
 elif command -v dnf &> /dev/null; then
-    # Fedora
     dnf install -y python3 python3-pip
 else
-    echo "Cannot determine package manager, please install Python3 and pip3 manually"
-    exit 1
+        die "Cannot determine package manager; install Python3 & pip manually and re-run."
 fi
 
-# Create dedicated user and group
+# Ensure group
+if ! getent group "$GROUP" >/dev/null 2>&1; then
+    info "Creating group: $GROUP"
+    groupadd --system "$GROUP" || true
+fi
+
+# Create dedicated user if missing
 if ! id "$USER" &>/dev/null; then
-    echo "Creating dedicated user: $USER"
-    useradd --system --no-create-home --shell /bin/false "$USER"
+        info "Creating dedicated user: $USER"
+        useradd --system --no-create-home --shell /bin/false -g "$GROUP" "$USER"
 fi
 
-# Create installation directory
-echo "Creating installation directory: $INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-chown "$USER:$GROUP" "$INSTALL_DIR"
+# Idempotent directory creation
+info "Creating installation directory: $INSTALL_DIR"
+mkdir -p "$INSTALL_DIR" && chown "$USER:$GROUP" "$INSTALL_DIR"
 
-# Create log directory
-echo "Creating log directory: $LOG_DIR"
+# Log directory (shared) may already exist
+info "Ensuring log directory: $LOG_DIR"
 mkdir -p "$LOG_DIR"
 chown "$USER:$GROUP" "$LOG_DIR"
 
-# Create Python virtual environment
-echo "Creating Python virtual environment..."
-sudo -u "$USER" python3 -m venv "$VENV_DIR"
+if [[ "$REINSTALL" == "1" && -d "$VENV_DIR" ]]; then
+    warn "REINSTALL=1: removing existing virtualenv $VENV_DIR"
+    rm -rf "$VENV_DIR"
+fi
 
-# Install aiosmtpd in virtual environment
-echo "Installing aiosmtpd in virtual environment..."
-sudo -u "$USER" "$VENV_DIR/bin/pip" install aiosmtpd
+# Create Python virtual environment if absent
+if [[ ! -d "$VENV_DIR" ]]; then
+    info "Creating Python virtual environment..."
+    sudo -u "$USER" "$PYTHON_BIN" -m venv "$VENV_DIR"
+else
+    info "Virtualenv already exists: $VENV_DIR"
+fi
 
-# Create server script
-echo "Creating aiosmtpd server script..."
+PIP="$VENV_DIR/bin/pip"
+if [[ ! -x "$PIP" ]]; then
+    die "pip not found in virtualenv ($PIP)."
+fi
+
+if [[ "$UPGRADE" == "1" ]]; then
+    info "UPGRADE=1: upgrading pip + aiosmtpd"
+    sudo -u "$USER" "$PIP" install --upgrade pip
+    if [[ -n "$AIOSMTPD_VERSION" ]]; then
+        sudo -u "$USER" "$PIP" install --upgrade "aiosmtpd==${AIOSMTPD_VERSION}"
+    else
+        sudo -u "$USER" "$PIP" install --upgrade aiosmtpd
+    fi
+elif [[ "$REINSTALL" == "1" ]]; then
+    info "Installing aiosmtpd (fresh)"
+    if [[ -n "$AIOSMTPD_VERSION" ]]; then
+        sudo -u "$USER" "$PIP" install "aiosmtpd==${AIOSMTPD_VERSION}"
+    else
+        sudo -u "$USER" "$PIP" install aiosmtpd
+    fi
+else
+    # Install only if not present
+    if ! sudo -u "$USER" "$VENV_DIR/bin/python" -c "import aiosmtpd" 2>/dev/null; then
+        info "Installing aiosmtpd (not found in venv)"
+        if [[ -n "$AIOSMTPD_VERSION" ]]; then
+            sudo -u "$USER" "$PIP" install "aiosmtpd==${AIOSMTPD_VERSION}"
+        else
+            sudo -u "$USER" "$PIP" install aiosmtpd
+        fi
+    else
+        info "aiosmtpd already installed; skip (use UPGRADE=1 to force upgrade)."
+    fi
+fi
+
+# Create / update server script (idempotent overwrite OK)
+info "Writing server script $SCRIPT_NAME"
 cat > "$INSTALL_DIR/$SCRIPT_NAME" << 'EOF'
 #!/usr/bin/env python3
 """
@@ -131,13 +264,49 @@ if __name__ == "__main__":
     asyncio.run(main())
 EOF
 
-# Set script permissions
-chmod +x "$INSTALL_DIR/$SCRIPT_NAME"
-chown "$USER:$GROUP" "$INSTALL_DIR/$SCRIPT_NAME"
+chmod +x "$INSTALL_DIR/$SCRIPT_NAME" && chown "$USER:$GROUP" "$INSTALL_DIR/$SCRIPT_NAME"
 
-# Create init.d service script
-echo "Creating init.d service script..."
-cat > "/etc/init.d/$SERVICE_NAME" << EOF
+# Basic port conflict check
+if ss -tuln 2>/dev/null | grep -q ":$PORT"; then
+    warn "Port $PORT already in use. Service start may fail."
+fi
+
+#############################################
+# Service creation (systemd preferred)
+#############################################
+if [[ $IS_SYSTEMD -eq 1 ]]; then
+    info "Detected systemd – creating unit file /etc/systemd/system/${SERVICE_NAME}.service"
+    cat > "/etc/systemd/system/${SERVICE_NAME}.service" <<UNIT
+[Unit]
+Description=aiosmtpd SMTP Server (port $PORT)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=$USER
+Group=$GROUP
+WorkingDirectory=$INSTALL_DIR
+Environment=PYTHONUNBUFFERED=1 PORT=$PORT
+ExecStart=$VENV_DIR/bin/python $INSTALL_DIR/$SCRIPT_NAME
+Restart=on-failure
+RestartSec=5
+# Logs go to journald; you can view with: journalctl -u $SERVICE_NAME -f
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+    systemctl daemon-reload
+    systemctl enable "$SERVICE_NAME" >/dev/null 2>&1 || true
+    systemctl restart "$SERVICE_NAME" || systemctl start "$SERVICE_NAME"
+    info "systemd service deployed & (re)started."
+else
+    ###########################################
+    # Legacy sysv init.d fallback
+    ###########################################
+    info "Systemd not found – using init.d script."
+    echo "Creating init.d service script..."
+    cat > "/etc/init.d/$SERVICE_NAME" << EOF
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          $SERVICE_NAME
@@ -149,7 +318,6 @@ cat > "/etc/init.d/$SERVICE_NAME" << EOF
 # Description:       aiosmtpd SMTP Server listening on port $PORT
 ### END INIT INFO
 
-# Define variables
 NAME="$SERVICE_NAME"
 USER="$USER"
 GROUP="$GROUP"
@@ -160,127 +328,105 @@ PIDFILE="/var/run/\$NAME.pid"
 LOGFILE="$LOG_DIR/aiosmtpd.log"
 ERRFILE="$LOG_DIR/aiosmtpd-error.log"
 
-# Get function from functions library
 . /lib/lsb/init-functions
 
-# Start the service
 start() {
     echo "Starting \$NAME..."
     start-stop-daemon --start --background --make-pidfile --pidfile \$PIDFILE \\
         --chuid \$USER:\$GROUP --chdir \$INSTALL_DIR \\
-        --exec \$VENV_DIR/bin/python3 -- \$SCRIPT \\
-        >> \$LOGFILE 2>> \$ERRFILE
+        --exec \$VENV_DIR/bin/python -- \$SCRIPT \\
+        >> \$LOGFILE 2>> \$ERRFILE || return 1
     echo "Service \$NAME started"
 }
 
-# Stop the service
 stop() {
     echo "Stopping \$NAME..."
-    if ! start-stop-daemon --stop --quiet --pidfile \$PIDFILE --user \$USER --retry 5; then
-        log_daemon_msg "PID file not found or process dead, searching by name..."
-        local pids
-        pids=\$(pgrep -f "\$SCRIPT" -u "\$USER")
-        if [ -n "\$pids" ]; then
-            log_daemon_msg "Found running process(es) with PID(s): \$pids. Terminating..."
-            kill \$pids
-            # Wait for process to die
-            for i in {1..10}; do
-                if ! pgrep -f "\$SCRIPT" -u "\$USER" > /dev/null; then
-                    break
-                fi
-                sleep 0.5
-            done
-            if pgrep -f "\$SCRIPT" -u "\$USER" > /dev/null; then
-                log_daemon_msg "Process did not terminate gracefully, sending KILL..."
-                kill -9 \$pids
-            fi
-        else
-            log_daemon_msg "No running process found."
-        fi
+    if start-stop-daemon --stop --quiet --pidfile \$PIDFILE --retry 5; then
+        rm -f \$PIDFILE
+        return 0
+    fi
+    local pids
+    pids=\$(pgrep -f "\$SCRIPT" -u "\$USER" || true)
+    [ -z "\$pids" ] || kill \$pids 2>/dev/null || true
+    sleep 1
+    for i in 1 2 3; do
+        pgrep -f "\$SCRIPT" -u "\$USER" >/dev/null || break
+        sleep 1
+    done
+    if pgrep -f "\$SCRIPT" -u "\$USER" >/dev/null; then
+        kill -9 \$(pgrep -f "\$SCRIPT" -u "\$USER") 2>/dev/null || true
     fi
     rm -f \$PIDFILE
-    log_end_msg 0
+    return 0
 }
 
-# Restart the service
-restart() {
-    stop
-    sleep 2
-    start
-}
+restart() { stop; sleep 2; start; }
 
-case "\$1" in
-    start)
-        start
-        ;;
-    stop)
-        stop
-        ;;
-    restart)
-        restart
-        ;;
+case "$1" in
+    start) start ;;
+    stop) stop ;;
+    restart) restart ;;
     status)
-        status_of_proc -p \$PIDFILE \$VENV_DIR/bin/python3 \$NAME && exit 0 || exit \$?
+        if [ -f \$PIDFILE ] && kill -0 \$(cat \$PIDFILE 2>/dev/null) 2>/dev/null; then
+            echo "\$NAME running (pid \$(cat \$PIDFILE))"; exit 0
+        else
+            echo "\$NAME not running"; exit 3
+        fi
         ;;
-    *)
-        echo "Usage: \$0 {start|stop|restart|status}"
-        exit 1
-        ;;
+    *) echo "Usage: $0 {start|stop|restart|status}"; exit 1 ;;
 esac
-
 exit 0
 EOF
-
-# Set init.d script permissions
-chmod +x "/etc/init.d/$SERVICE_NAME"
-
-# Enable service to start on boot
-echo "Enabling service to start on boot..."
-if command -v update-rc.d &> /dev/null; then
-    update-rc.d "$SERVICE_NAME" defaults
-elif command -v chkconfig &> /dev/null; then
-    chkconfig --add "$SERVICE_NAME"
-    chkconfig "$SERVICE_NAME" on
-else
-    echo "Warning: Cannot enable service to start on boot automatically"
-    echo "You may need to enable it manually for your system"
+    chmod +x "/etc/init.d/$SERVICE_NAME"
+    if command -v update-rc.d >/dev/null 2>&1; then
+        update-rc.d "$SERVICE_NAME" defaults || true
+    elif command -v chkconfig >/dev/null 2>&1; then
+        chkconfig --add "$SERVICE_NAME" || true
+        chkconfig "$SERVICE_NAME" on || true
+    fi
+    service "$SERVICE_NAME" restart || service "$SERVICE_NAME" start || true
 fi
 
-# Start service
-echo "Starting $SERVICE_NAME service..."
-service "$SERVICE_NAME" start
-
-# Check service status
-echo "Checking service status..."
-sleep 2  # Give the service some time to start
-service "$SERVICE_NAME" status
-
-# Check port listening status
-echo "Checking port listening status..."
-if command -v ss &> /dev/null; then
-    if ss -tuln | grep ":$PORT"; then
-        echo "Port $PORT is listening"
-    else
-        echo "Port $PORT is not listening, please check service status and logs"
-    fi
-elif command -v netstat &> /dev/null; then
-    if netstat -tuln | grep ":$PORT"; then
-        echo "Port $PORT is listening"
-    else
-        echo "Port $PORT is not listening, please check service status and logs"
-    fi
+#############################################
+# Post‑install summary
+#############################################
+sleep 2 || true
+if [[ $IS_SYSTEMD -eq 1 ]]; then
+    systemctl is-active --quiet "$SERVICE_NAME" && status_msg="active" || status_msg="(not active)"
+    info "Service state: $status_msg (systemd)"
 else
-    echo "Cannot check port listening status, please verify manually"
+    service "$SERVICE_NAME" status || true
 fi
 
-# Provide service management commands
-echo -e "\nInstallation complete! Service has been set to start automatically on boot."
-echo -e "View service logs: tail -f $LOG_DIR/aiosmtpd.log"
-echo -e "Check service status: service $SERVICE_NAME status"
-echo -e "Stop service: service $SERVICE_NAME stop"
-echo -e "Start service: service $SERVICE_NAME start"
-echo -e "Restart service: service $SERVICE_NAME restart"
+if ss -tuln 2>/dev/null | grep -q ":$PORT"; then
+    info "Port $PORT is listening"
+else
+    warn "Port $PORT not detected listening; check logs or: journalctl -u $SERVICE_NAME -f"
+fi
 
-# Test instructions
-echo -e "\nTest if server is working properly:"
-echo "echo 'Test email content' | mail -s 'Test Subject' -S smtp=localhost:$PORT recipient@example.com"
+cat <<SUMMARY
+--------------------------------------------------
+Installation / Update complete.
+Service Name : $SERVICE_NAME
+User / Group : $USER:$GROUP
+Install Dir  : $INSTALL_DIR
+Virtualenv   : $VENV_DIR
+Port         : $PORT
+Log Dir      : $LOG_DIR
+Systemd      : $([[ $IS_SYSTEMD -eq 1 ]] && echo yes || echo no)
+
+Manage (systemd):
+    systemctl status $SERVICE_NAME
+    systemctl restart $SERVICE_NAME
+    journalctl -u $SERVICE_NAME -f
+
+Manage (sysv init):
+    service $SERVICE_NAME status|start|stop|restart
+
+Uninstall:
+    sudo ./install_aiosmtpd.sh UNINSTALL=1
+
+Test send (if 'mail' installed):
+    echo 'Test email body' | mail -s 'Test Subject' -S smtp=localhost:$PORT you@example.com
+--------------------------------------------------
+SUMMARY
