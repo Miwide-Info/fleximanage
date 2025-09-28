@@ -247,11 +247,12 @@ log "[6/7] Initializing replica set..."
 sleep 8 # Wait for instances to be ready
 
 # Build replica set configuration using legacy mongo shell syntax
-# 注意: 之前这里包含了 "\n" 转义（作为非字符串出现的反斜杠字符），Mongo shell 在解析对象字面量时把它当成非法字符，导致 SyntaxError: illegal character。
-# 必须把这些 \n 去掉，保持为单行 JS 对象字面量。
+# NOTE: Previously this line contained literal "\n" escape sequences (backslashes not inside a string).
+# Mongo shell treated them as illegal characters while parsing the object literal, producing: SyntaxError: illegal character.
+# They must be removed so the config is a single-line JS object literal.
 REPLICA_CONFIG="{ _id: \"${REPLICA_SET_NAME}\", members: [ { _id: 0, host: \"${RS_HOST}:${USED_PORTS[0]}\" }, { _id: 1, host: \"${RS_HOST}:${USED_PORTS[1]}\" }, { _id: 2, host: \"${RS_HOST}:${USED_PORTS[2]}\" } ] }"
 
-# 如果副本集已经初始化（重复运行且未 CLEAN），避免再次 rs.initiate 误报。
+# If the replica set is already initialized (rerun without CLEAN), avoid re-running rs.initiate and spurious errors.
 existing_status=$($MONGO_BIN --port "${USED_PORTS[0]}" --quiet --eval 'try { s=rs.status(); printjson(s) } catch(e){ print("RS_STATUS_ERROR") }' 2>/dev/null || true)
 if echo "$existing_status" | grep -q '"ok"[[:space:]]*:[[:space:]]*1' && echo "$existing_status" | grep -q '"myState"' ; then
   if echo "$existing_status" | grep -q '"myState"[[:space:]]*:[[:space:]]*1'; then
@@ -269,9 +270,9 @@ else
   MONGO_EXIT_CODE=$?
   set +x
   log "--- Mongo Shell Output END ---"
-  # 处理 AlreadyInitialized (code 23) 情况
+  # Handle AlreadyInitialized (code 23) case
   if [ $MONGO_EXIT_CODE -ne 0 ]; then
-    # 尝试判定是否只是已初始化
+  # Try to determine whether it's simply already initialized
     if $MONGO_BIN --port "${USED_PORTS[0]}" --quiet --eval 'try{c=rs.status();print(c.ok)}catch(e){print(0)}' 2>/dev/null | grep -q '^1$'; then
       log "rs.initiate returned non-zero but replica set appears healthy (likely AlreadyInitialized). Continuing."
     else
@@ -301,8 +302,8 @@ for i in {1..60}; do
 done
 
 if [ "$primary_ok" != "1" ]; then
-  log "WARNING: Primary member not confirmed within 120 seconds. 可能原因: 1) 还有多余 mongod 进程 2) 主机名不一致 3) 资源不足。"
-  log "排查建议:"
+  log "WARNING: Primary member not confirmed within 120 seconds. Possible causes: 1) Extra mongod processes 2) Hostname mismatch 3) Insufficient resources."
+  log "Troubleshooting suggestions:"
   log "  sudo pgrep -af mongod"
   log "  sudo tail -n 40 /var/log/mongodb/mongod-${USED_PORTS[0]}.log"
   log "  ${MONGO_BIN} --port ${USED_PORTS[0]} --eval 'rs.status()'"

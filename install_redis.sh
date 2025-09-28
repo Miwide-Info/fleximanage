@@ -73,10 +73,10 @@ echo "Configuring Redis..."
 
 # Decide daemonize & supervised mode
 if [[ $IS_SYSTEMD -eq 1 ]]; then
-    DAEMONIZE="no"          # systemd 期望前台进程
+    DAEMONIZE="no"          # systemd expects foreground process
     SUPERVISED="systemd"
 else
-    DAEMONIZE="yes"         # 传统 sysv / 容器简单场景
+    DAEMONIZE="yes"         # traditional sysv / simple container scenario
     SUPERVISED="no"
 fi
 
@@ -91,7 +91,7 @@ bind 0.0.0.0
 
 # IPv6 is disabled by binding to 0.0.0.0
 
-# Run as a daemon (systemd 环境设为 no)
+# Run as a daemon (set to 'no' under systemd environments)
 daemonize ${DAEMONIZE}
 
 # Supervision mode	supervised ${SUPERVISED}
@@ -137,7 +137,7 @@ rdbcompression yes
 rdbchecksum yes
 dbfilename dump.rdb
 
-# Redis ACL example user (保留原语义，可按需调整)
+# Redis ACL example user (keep original semantics; adjust if needed)
 user $REDIS_USER on >@all -@admin ~* +@all
 EOF
 
@@ -146,7 +146,7 @@ chown "$REDIS_USER:$REDIS_GROUP" "$REDIS_CONF_FILE"
 chmod 644 "$REDIS_CONF_FILE"
 
 if [[ $IS_SYSTEMD -eq 0 ]]; then
-    # 仅在非 systemd 环境创建 init.d 脚本
+    # Create init.d script only in non-systemd environments
     echo "Creating init.d service script (sysv)..."
     cat > "/etc/init.d/redis-server" << 'EOF'
 #!/bin/sh
@@ -398,7 +398,7 @@ EOF
     echo "Checking service status..."; sleep 2; service redis-server status || true
     # Fallback if status reports not running but port listens check fails later
 else
-    # systemd 环境：使用 apt 自带的 systemd unit，不再使用自定义 init 脚本
+    # systemd environment: use the distribution-provided systemd unit; do not keep custom init script
     if [[ -f /etc/init.d/redis-server ]]; then
         mv /etc/init.d/redis-server /etc/init.d/redis-server.disabled 2>/dev/null || true
     fi
