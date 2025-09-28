@@ -69,25 +69,10 @@ log "Frontend build complete -> $(pwd)/build"
 
 cd - >/dev/null
 
-# Optional: copy build output to legacy/proprietary serving path backend/client/build
-# (Requested synchronization). Can be skipped via SKIP_COPY=1
-if [ "${SKIP_COPY:-0}" != "1" ]; then
-  LEGACY_BUILD_DIR="$BACKEND_DIR/client/build"
-  log "Syncing build output to $LEGACY_BUILD_DIR"
-  mkdir -p "$LEGACY_BUILD_DIR"
-  # Clean target (avoid stale removed files lingering)
-  rm -rf "$LEGACY_BUILD_DIR"/*
-  # Copy all generated assets
-  cp -a "$FRONTEND_DIR/build/." "$LEGACY_BUILD_DIR/"
-  # Basic verification
-  if [ ! -f "$LEGACY_BUILD_DIR/index.html" ]; then
-    err "Copy failed: index.html not found in $LEGACY_BUILD_DIR"
-    exit 3
-  fi
-  log "Legacy copy complete -> $LEGACY_BUILD_DIR"
-else
-  log "Skipping legacy copy step (SKIP_COPY=1)"
-fi
+# NOTE: Legacy copy to backend/client/build removed.
+# The backend now serves ../frontend/build directly (configs clientStaticDir).
+# If you still need a duplicated copy for some external packaging, implement it
+# outside this repository or add a new optional block controlled by an explicit flag.
 
 if [ "${START_BACKEND:-0}" = "1" ]; then
   log "Installing backend dependencies ($BACKEND_DIR)"
