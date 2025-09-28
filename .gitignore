@@ -25,4 +25,46 @@ coverage/
 # tmp pki directory
 backend/tmp/openvpn_pki*
 
+# -----------------------------
+# Additional ignore patterns (applied 2025-09-28)
+# -----------------------------
+
+# Explicit build output directories (already covered by generic 'build' but clearer)
+frontend/build/
+backend/client/build/
+
+# Generated API / tool caches
+backend/.openapi-generator/
+
+# Environment & secret files (retain example for documentation)
+.env
+.env.*
+!.env.example
+
+# Logs directory & rotated logs / pid files
+backend/logs/
+*.log.*
+*.pid
+*.pid.lock
+
+# Additional coverage outputs
+.nyc_output/
+
+# Distribution build directories that may appear in submodules/packages
+dist/
+*/dist/
+
+# IDE / editor / temp artifacts
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# Backup / diagnostic / temp dump artifacts
+*.diag
+*.bak
+*.tmp
+
+
 # (Removed) legacy experimental frontend-react/ directory cleaned up
