@@ -36,7 +36,8 @@ function Fail($msg) {
 function Check-DockerRunning {
     Write-Host "Checking Docker daemon..." -NoNewline
     try {
-        docker info *>$null 2>&1 || Fail "Docker is not running. Please start Docker Desktop first."
+        docker info >$null 2>&1
+        if ($LASTEXITCODE -ne 0) { Fail "Docker is not running. Please start Docker Desktop first." }
         Write-Host " OK" -ForegroundColor Green
     } catch {
         Fail "Docker not available: $_"
