@@ -305,6 +305,13 @@ const configEnv = {
   development: {
     // Updated to serve the new React UI (OpenSource-OpenNetworking) located at /frontend
     clientStaticDir: '../frontend/build',
+    // Allowed servers for token creation (override restServerUrl list for token validation only)
+    // Include local dev, public manage endpoint, and custom manage.miwide.com domain.
+    tokenAllowedServers: [
+      'https://local.flexiwan.com:3443',
+      'https://manage.flexiwan.com:443',
+      'https://manage.miwide.com:443'
+    ],
     mailerBypassCert: true,
     SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest-testing',
     userTokenExpiration: 604800,

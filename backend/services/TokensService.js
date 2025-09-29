@@ -117,7 +117,9 @@ class TokensService {
   static async tokensIdPUT ({ id, org, ...tokenRequest }, { user }) {
     try {
       const orgList = await getAccessTokenOrgList(user, org, true);
-      const servers = configs.get('restServerUrl', 'list');
+      // Allowed servers: prefer tokenAllowedServers, fallback to restServerUrl
+      const servers = configs.get('tokenAllowedServers', 'list') ||
+        configs.get('restServerUrl', 'list');
       // Verify request schema
       const { valid, message } = await TokensService.verifyRequestSchema(
         tokenRequest, orgList[0], servers
@@ -161,7 +163,8 @@ class TokensService {
     try {
       const orgList = await getAccessTokenOrgList(user, org, true);
 
-      const servers = configs.get('restServerUrl', 'list');
+      const servers = configs.get('tokenAllowedServers', 'list') ||
+        configs.get('restServerUrl', 'list');
       // Verify request schema
       const { valid, message } = await TokensService.verifyRequestSchema(
         tokenRequest, orgList[0], servers
@@ -221,7 +224,18 @@ class TokensService {
   }
 
   static async verifyRequestSchema (tokenRequest, org, allowedServers) {
-    const { _id, name, server } = tokenRequest;
+    const { _id, name } = tokenRequest;
+    let { server } = tokenRequest;
+    if (server && typeof server === 'string') {
+      // Normalize: trim & ensure protocol present (default https)
+      server = server.trim();
+      if (server && !/^https?:\/\//i.test(server)) {
+        server = 'https://' + server.replace(/^\/*/, '');
+      }
+      // Remove trailing slash for comparison
+      server = server.replace(/\/$/, '');
+      tokenRequest.server = server; // reflect normalized value back
+    }
 
     // Duplicate names are not allowed in the same organization
     const hasDuplicateName = await Tokens.findOne(
