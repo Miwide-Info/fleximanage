@@ -279,7 +279,7 @@ router.route('/register')
 // Mounted at /api/users, so path here should NOT repeat /users
 router.route('/:id/verify')
   .post(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
-    console.log('[DEBUG verify] req.user && admin:', !!(req.user && req.user.admin), 'userId:', req.user && req.user._id);
+  // debug verify removed
     try {
       // Only super admin (user.admin === true) may approve
       if (!req.user || req.user.admin !== true) {
@@ -311,7 +311,7 @@ router.route('/:id/verify')
 // DELETE /api/users/:id/admin -> demote (admin=false)
 router.route('/:id/admin')
   .put(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
-    console.log('[DEBUG promote] req.user.admin:', req.user && req.user.admin, 'userId:', req.user && req.user._id);
+  // debug promote removed
     try {
       if (!req.user || req.user.admin !== true) {
         return next(createError(403, 'Only super admin can promote admin'));
@@ -335,7 +335,7 @@ router.route('/:id/admin')
     }
   })
   .delete(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
-    console.log('[DEBUG demote] req.user.admin:', req.user && req.user.admin, 'userId:', req.user && req.user._id);
+  // debug demote removed
     try {
       if (!req.user || req.user.admin !== true) {
         return next(createError(403, 'Only super admin can demote admin'));
@@ -349,9 +349,7 @@ router.route('/:id/admin')
         return res.status(200).json({ status: 'already non-admin' });
       }
       const adminCount = await User.countDocuments({ admin: true });
-      console.log('[DEBUG demote] adminCount:', adminCount,
-        'targetId:', targetId,
-        'selfId:', req.user._id.toString());
+      // debug demote adminCount removed
       if (adminCount <= 1) {
         return next(createError(400, 'Cannot demote the last remaining admin (adminCount=1)'));
       }
