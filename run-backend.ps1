@@ -133,7 +133,7 @@ function Stop-StartedContainers {
   if($script:startedContainers.Count -eq 0){ return }
   Write-Info "Stopping containers: $($script:startedContainers -join ', ')"
   foreach($c in $script:startedContainers){
-    try { docker rm -f $c >$null 2>&1 } catch { Write-Warn "Failed to remove container $c: $($_)" }
+    try { docker rm -f $c >$null 2>&1 } catch { Write-Warn ('Failed to remove container {0}: {1}' -f $c, $_) }
   }
 }
 
