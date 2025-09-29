@@ -10,6 +10,7 @@ import AccountOrganizations from './pages/account/Organizations';
 import AccountNotificationsSettings from './pages/account/NotificationsSettings';
 import AccountBilling from './pages/account/Billing';
 import AccountAccessKeys from './pages/account/AccessKeys';
+import AccountMembers from './pages/account/Members';
 import Devices from './pages/Devices';
 import Network from './pages/Network';
 import Tunnels from './pages/Tunnels';
@@ -27,7 +28,7 @@ import './styles/layout.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // legacy state retained in case of future re-enable
+  const [sidebarCollapsed] = useState(false); // legacy placeholder
   const [perms, setPerms] = useState({});
   const location = useLocation();
   const navigate = useNavigate();
@@ -94,6 +95,9 @@ function App() {
             <Route path="/account/organizations" element={<Guard permKey="organizations" element={<AccountOrganizations />} />} />
           <Route path="/account/notifications" element={<Guard permKey="notifications" element={<AccountNotificationsSettings />} />} />
           <Route path="/account/billing" element={<Guard permKey="billing" element={<AccountBilling />} />} />
+          { /* Users page guarded by dedicated 'members' permission */ }
+          <Route path="/users" element={<Guard permKey="members" element={<AccountMembers />} />} />
+          <Route path="/account/members" element={<Navigate to="/users" replace />} />
           <Route path="/account/access-keys" element={<Guard permKey="accesstokens" element={<AccountAccessKeys />} />} />
           <Route path="/devices" element={<Guard permKey="devices" element={<Devices />} />} />
           <Route path="/network" element={<Guard permKey="organizations" element={<Network />} />} />

@@ -49,6 +49,7 @@ exports.getToken = async function ({ user }, override = {}, shouldExpire = true)
         : null,
       perms: perms,
       mfaVerified,
+      admin: user.admin === true,
       ...override
     },
     configs.get('userTokenSecretKey'),

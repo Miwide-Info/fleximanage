@@ -426,23 +426,30 @@ class NotificationsService {
       await NotificationsService.validateParams(user, org, account, group);
       const orgIds = await NotificationsService.fetchOrgList(user, org, account, group, true);
       const response = await notificationsConf.find({ org: { $in: orgIds.map(orgId => new ObjectId(orgId)) } }).lean();
+      // Defensive: if no notification settings found, return empty object instead of causing TypeError on .rules
+      if (!response || response.length === 0) {
+        return Service.successResponse({});
+      }
       if (org) {
+        const first = response[0];
+        const baseRules = (first && first.rules && typeof first.rules === 'object') ? first.rules : {};
         const sortedRules = Object.fromEntries(
-          Object.entries(response[0].rules).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+          Object.entries(baseRules).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
         );
         return Service.successResponse(sortedRules);
       } else {
         const mergedRules = {};
-        response.forEach(org => {
-          Object.keys(org.rules).forEach(ruleName => {
+        response.forEach(orgDoc => {
+          const orgRules = orgDoc?.rules && typeof orgDoc.rules === 'object' ? orgDoc.rules : {};
+          Object.keys(orgRules).forEach(ruleName => {
             if (!mergedRules[ruleName]) {
               mergedRules[ruleName] = {};
-              Object.keys(org.rules[ruleName]).forEach(settingName => {
-                mergedRules[ruleName][settingName] = org.rules[ruleName][settingName];
+              Object.keys(orgRules[ruleName]).forEach(settingName => {
+                mergedRules[ruleName][settingName] = orgRules[ruleName][settingName];
               });
             } else {
-              Object.keys(org.rules[ruleName]).forEach(settingName => {
-                if (mergedRules[ruleName][settingName] !== org.rules[ruleName][settingName]) {
+              Object.keys(orgRules[ruleName]).forEach(settingName => {
+                if (mergedRules[ruleName][settingName] !== orgRules[ruleName][settingName]) {
                   mergedRules[ruleName][settingName] = 'varies';
                 }
               });

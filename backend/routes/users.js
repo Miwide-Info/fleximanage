@@ -43,6 +43,7 @@ const { generateSecret, verifyCode } = require('../otp');
 const SHA256 = require('crypto-js/sha256');
 const rateLimit = require('express-rate-limit');
 const RateLimitStore = require('../rateLimitStore');
+const AdminAudit = require('../models/adminAudit');
 
 router.use(bodyParser.json());
 
@@ -144,7 +145,7 @@ router.route('/register')
           name: req.body.userFirstName,
           lastName: req.body.userLastName,
           email: req.body.email,
-            jobTitle: req.body.userJobTitle,
+          jobTitle: req.body.userJobTitle,
           phoneNumber: req.body.userPhoneNumber,
           admin: false,
           state: FAST_VERIFY ? 'verified' : 'unverified',
@@ -177,6 +178,20 @@ router.route('/register')
         // Skip sending verification mail in fast dev mode
         if (registerUser.state === 'verified') return Promise.resolve(true);
         const uiServerUrl = getUiServerUrl(req);
+        const verifyBtnStyle = [
+          'color:#fff',
+          'background-color:#F99E5B',
+          'border-color:#F99E5B',
+          'font-weight:400',
+          'text-align:center',
+          'vertical-align:middle',
+          'border:1px solid transparent',
+          'padding:.375rem .75rem',
+          'font-size:1rem',
+          'line-height:1.5',
+          'border-radius:.25rem',
+          'cursor:pointer'
+        ].join(';');
         return mailer.sendMailHTML(
           configs.get('mailerEnvelopeFromAddress'),
           configs.get('mailerFromAddress'),
@@ -184,12 +199,19 @@ router.route('/register')
           `Verify Your ${configs.get('companyName')} Account`,
           `<h2>Thank you for joining ${configs.get('companyName')}</h2>
             <b>Click below to verify your account:</b>
-            <p><a href="${uiServerUrl}/verify-account?id=${registerUser._id}&t=${registerUser.emailTokens.verify}"><button style="color:#fff;background-color:#F99E5B;
-            border-color:#F99E5B;font-weight:400;text-align:center;
-            vertical-align:middle;border:1px solid transparent;
-            padding:.375rem .75rem;font-size:1rem;line-height:1.5;
-            border-radius:.25rem;
-            cursor:pointer">Verify Account</button></a></p>
+            <p>
+              <a
+                href="${uiServerUrl}/verify-account?id=${registerUser._id}&t=${
+                  registerUser.emailTokens.verify
+                }"
+              >
+                <button
+                  style="${verifyBtnStyle}"
+                >
+                  Verify Account
+                </button>
+              </a>
+            </p>
             <p>Your friends @ ${configs.get('companyName')}</p>`
         );
       })
@@ -225,7 +247,10 @@ router.route('/register')
         return Promise.resolve(true);
       })
       .then(() => {
-        return res.status(200).json({ status: 'user registered', fastVerified: registerUser.state === 'verified' });
+        return res.status(200).json({
+          status: 'user registered',
+          fastVerified: registerUser.state === 'verified'
+        });
       })
       .catch(async (err) => {
         if (session) session.abortTransaction();
@@ -248,6 +273,180 @@ router.route('/register')
         const fErr = formatErr(err, req.body);
         return next(createError(fErr.status, fErr.error));
       });
+  });
+
+// Manual verify endpoint for super admin approval of pending users
+// Mounted at /api/users, so path here should NOT repeat /users
+router.route('/:id/verify')
+  .post(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    try {
+      // Only super admin (user.admin === true) may approve
+      if (!req.user || req.user.admin !== true) {
+        return next(createError(403, 'Only super admin can verify users'));
+      }
+      const targetId = req.params.id;
+      if (!targetId) return next(createError(400, 'Missing user id'));
+      const target = await User.findOne({ _id: targetId });
+      if (!target) return next(createError(404, 'User not found'));
+      if (target.state === 'verified') {
+        return res.status(200).json({ status: 'already verified' });
+      }
+      target.state = 'verified';
+      target.emailTokens.verify = '';
+      await target.save();
+      logger.info('User verified by super admin', {
+        params: { targetUser: target._id, by: req.user._id }
+      });
+      // audit
+      AdminAudit.create({ action: 'VERIFY_USER', targetUser: target._id, byUser: req.user._id });
+      return res.status(200).json({ status: 'verified' });
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  });
+
+// Promote/Demote admin status (super admin only):
+// PUT /api/users/:id/admin   -> promote (admin=true)
+// DELETE /api/users/:id/admin -> demote (admin=false)
+router.route('/:id/admin')
+  .put(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    try {
+      if (!req.user || req.user.admin !== true) {
+        return next(createError(403, 'Only super admin can promote admin'));
+      }
+      const targetId = req.params.id;
+      if (!targetId) return next(createError(400, 'Missing user id'));
+      const target = await User.findOne({ _id: targetId });
+      if (!target) return next(createError(404, 'User not found'));
+      if (target.admin === true) {
+        return res.status(200).json({ status: 'already admin' });
+      }
+      target.admin = true;
+      await target.save();
+      logger.info('User promoted to admin', {
+        params: { targetUser: target._id, by: req.user._id }
+      });
+      AdminAudit.create({ action: 'PROMOTE_ADMIN', targetUser: target._id, byUser: req.user._id });
+      return res.status(200).json({ status: 'promoted', userId: target._id });
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  })
+  .delete(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    try {
+      if (!req.user || req.user.admin !== true) {
+        return next(createError(403, 'Only super admin can demote admin'));
+      }
+      const targetId = req.params.id;
+      if (!targetId) return next(createError(400, 'Missing user id'));
+      if (targetId === req.user._id.toString()) {
+        return next(createError(400, 'Cannot demote yourself'));
+      }
+      const target = await User.findOne({ _id: targetId });
+      if (!target) return next(createError(404, 'User not found'));
+      if (target.admin !== true) {
+        return res.status(200).json({ status: 'already non-admin' });
+      }
+      const adminCount = await User.countDocuments({ admin: true });
+      if (adminCount <= 1) {
+        return next(createError(400, 'Cannot demote the last remaining admin'));
+      }
+      target.admin = false;
+      await target.save();
+      logger.info('User demoted from admin', {
+        params: { targetUser: target._id, by: req.user._id }
+      });
+      AdminAudit.create({ action: 'DEMOTE_ADMIN', targetUser: target._id, byUser: req.user._id });
+      return res.status(200).json({ status: 'demoted', userId: target._id });
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  });
+
+// Batch admin promote/demote
+router.route('/admin/batch')
+  .post(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    try {
+      if (!req.user || req.user.admin !== true) {
+        return next(createError(403, 'Only super admin can batch modify admins'));
+      }
+      const { promote = [], demote = [] } = req.body || {};
+      const results = { promoted: [], demoted: [], errors: [] };
+      // Promote
+      for (const id of promote) {
+        try {
+          const u = await User.findOne({ _id: id });
+          if (!u) { results.errors.push({ id, error: 'not found' }); continue; }
+          if (u.admin === true) { continue; }
+          u.admin = true; await u.save();
+          AdminAudit.create({
+            action: 'BATCH_PROMOTE_ADMIN',
+            targetUser: u._id,
+            byUser: req.user._id
+          });
+          results.promoted.push(id);
+        } catch (e) {
+          results.errors.push({ id, error: e.message });
+        }
+      }
+      // Demote
+      for (const id of demote) {
+        try {
+          const u = await User.findOne({ _id: id });
+          if (!u) { results.errors.push({ id, error: 'not found' }); continue; }
+          if (u.admin !== true) { continue; }
+          const adminCount = await User.countDocuments({ admin: true });
+          if (adminCount <= 1) { results.errors.push({ id, error: 'last admin' }); continue; }
+          if (req.user._id.toString() === id) {
+            results.errors.push({ id, error: 'self demote blocked' });
+            continue;
+          }
+          u.admin = false; await u.save();
+          AdminAudit.create({
+            action: 'BATCH_DEMOTE_ADMIN',
+            targetUser: u._id,
+            byUser: req.user._id
+          });
+          results.demoted.push(id);
+        } catch (e) {
+          results.errors.push({ id, error: e.message });
+        }
+      }
+      return res.status(200).json(results);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  });
+
+// Batch verify users
+router.route('/verify/batch')
+  .post(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    try {
+      if (!req.user || req.user.admin !== true) {
+        return next(createError(403, 'Only super admin can batch verify'));
+      }
+      const { ids = [] } = req.body || {};
+      const results = { verified: [], errors: [] };
+      for (const id of ids) {
+        try {
+          const u = await User.findOne({ _id: id });
+          if (!u) { results.errors.push({ id, error: 'not found' }); continue; }
+          if (u.state === 'verified') { continue; }
+          u.state = 'verified'; u.emailTokens.verify = ''; await u.save();
+          AdminAudit.create({
+            action: 'BATCH_VERIFY_USER',
+            targetUser: u._id,
+            byUser: req.user._id
+          });
+          results.verified.push(id);
+        } catch (e) {
+          results.errors.push({ id, error: e.message });
+        }
+      }
+      return res.status(200).json(results);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
   });
 
 // verify account again if user did not received a verification email

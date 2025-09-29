@@ -10,7 +10,8 @@ import {
   FaShieldAlt,
   FaTachometerAlt,
   FaCog,
-  FaChevronDown
+  FaChevronDown,
+  FaUsers
 } from 'react-icons/fa';
 import './Sidebar.css';
 
@@ -37,6 +38,7 @@ const Sidebar = ({ collapsed }) => {
         { path: '/account/access-keys', label: 'Access Keys' },
       ]
     },
+    { type: 'item', path: '/users', icon: <FaUsers />, label: 'Users' },
     { type: 'item', path: '/devices', icon: <FaServer />, label: 'Devices' },
     { path: '/network', icon: <FaNetworkWired />, label: 'Network' },
     { path: '/tunnels', icon: <FaRoute />, label: 'Tunnels' },

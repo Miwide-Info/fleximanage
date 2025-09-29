@@ -5043,135 +5043,419 @@ paths:
       x-openapi-router-service: NotificationsService
   /members:
     get:
+      summary: List members visible to the current authenticated user
+      description: |
+        Returns the list of membership entries (account / organization / group) that the current user
+        is authorized to view. The visibility depends on the user's own membership scope.
+        Supports pagination, free text search, state filtering and simple field sorting.
       operationId: membersGET
+      tags:
+        - Members
+      security:
+        - bearerAuth: []
+        - apiKey: []
       parameters:
-      - description: The number of items to skip before starting to collect the result
-          set
-        explode: true
-        in: query
-        name: offset
-        required: false
-        schema:
-          type: integer
-        style: form
-      - description: The numbers of items to return
-        explode: true
-        in: query
-        name: limit
-        required: false
-        schema:
-          type: integer
-        style: form
+        - in: query
+          name: offset
+          description: Zero-based offset of the first item to return
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - in: query
+          name: limit
+          description: Maximum number of items to return (page size)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+        - in: query
+          name: state
+          description: Comma separated list of user_state values to include (e.g. 'unverified,verified')
+          schema:
+            type: string
+        - in: query
+          name: q
+          description: Case-insensitive substring match applied to user name / email
+          schema:
+            type: string
+        - in: query
+          name: sort
+          description: Field to sort by, optionally prefixed with '-' for descending (e.g. '-user_name')
+          schema:
+            type: string
       responses:
         "200":
+          description: List of members
           content:
             application/json:
               schema:
+                type: array
                 items:
                   $ref: '#/components/schemas/Member'
-                type: array
-                x-content-type: application/json
-          description: Successful operation
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Forbidden
-        "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: The specified resource was not found
         "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Internal server error
-        default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        default:
           description: Unexpected error
-      security:
-      - bearerAuth: []
-      - apiKey: []
-      summary: Get all Members
-      tags:
-      - Members
-      x-swagger-router-controller: Members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       x-openapi-router-controller: MembersController
       x-openapi-router-service: MembersService
     post:
+      summary: Create new member
+      description: Add a new user membership under the current user's visible scope.
       operationId: membersPOST
+      tags:
+        - Members
+      security:
+        - bearerAuth: []
+        - apiKey: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/MemberRequest'
       responses:
-        "201":
+        "200":
+          description: Newly created member
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Member'
-          description: Member has been added
-          headers:
-            Location:
-              description: Location of a new resource created
-              explode: false
-              required: true
-              schema:
-                type: string
-              style: simple
         "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: Internal server error
-        default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        default:
           description: Unexpected error
-      security:
-      - bearerAuth: []
-      - apiKey: []
-      summary: Create new member
-      tags:
-      - Members
-      x-swagger-router-controller: Members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       x-openapi-router-controller: MembersController
       x-openapi-router-service: MembersService
+  /users/{id}/admin:
+    put:
+      summary: Promote a user to super admin
+      operationId: usersPromoteAdmin
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: User ID to promote
+      responses:
+        "200":
+          description: User promoted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  userId:
+                    type: string
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Demote a super admin user back to regular user
+      operationId: usersDemoteAdmin
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: User ID to demote
+      responses:
+        "200":
+          description: User demoted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  userId:
+                    type: string
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+  /users/admin/batch:
+    post:
+        summary: Batch promote or demote admin users
+        description: Only super admin can batch modify admins. Provide arrays of user IDs to promote and/or demote.
+        tags:
+          - Users
+        operationId: usersAdminBatchPOST
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  promote:
+                    type: array
+                    items:
+                      type: string
+                  demote:
+                    type: array
+                    items:
+                      type: string
+        responses:
+          "200":
+            description: Batch admin modification result
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    promoted:
+                      type: array
+                      items:
+                        type: string
+                    demoted:
+                      type: array
+                      items:
+                        type: string
+                    errors:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          error:
+                            type: string
+          "400":
+            description: Bad request
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+          "403":
+            description: Forbidden
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+          "500":
+            description: Internal server error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+
+  /users/verify/batch:
+    post:
+        summary: Batch verify users
+        description: Only super admin can batch verify user accounts.
+        tags:
+          - Users
+        operationId: usersVerifyBatchPOST
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ids:
+                    type: array
+                    items:
+                      type: string
+        responses:
+          "200":
+            description: Batch verification result
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    verified:
+                      type: array
+                      items:
+                        type: string
+                    errors:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          error:
+                            type: string
+          "400":
+            description: Bad request
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+          "403":
+            description: Forbidden
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+          "500":
+            description: Internal server error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+
+  /users/admin/audit:
+    get:
+        summary: Retrieve admin audit log entries
+        description: List recent admin privilege and verification actions. Super admin only.
+        tags:
+          - Users
+        operationId: usersAdminAuditGET
+        parameters:
+          - in: query
+            name: offset
+            schema:
+              type: integer
+              default: 0
+          - in: query
+            name: limit
+            schema:
+              type: integer
+              default: 50
+          - in: query
+            name: action
+            schema:
+              type: string
+              description: Filter by action type
+          - in: query
+            name: target
+            schema:
+              type: string
+              description: Filter by target user id
+        responses:
+          "200":
+            description: Audit log result page
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          action:
+                            type: string
+                          targetUser:
+                            type: string
+                          byUser:
+                            type: string
+                          createdAt:
+                            type: string
+                            format: date-time
+          "403":
+            description: Forbidden
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+          "500":
+            description: Internal server error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+          default:
+            description: Unexpected error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+        security:
+          - bearerAuth: []
+          - apiKey: []
   /members/{id}:
     get:
       operationId: membersIdGET
@@ -11465,6 +11749,13 @@ components:
         role: owner
         user__id: user__id
         user_name: user_name
+        user_lastName: user_lastName
+        user_state: verified
+        user_jobTitle: jobTitle
+        user_phoneNumber: '+1-555'
+        user_admin: true
+        user_username: user_username
+        user_mfa_enabled: false
         account_name: account_name
         _id: _id
         to: to
@@ -11483,8 +11774,26 @@ components:
           type: string
         user_name:
           type: string
+        user_lastName:
+          type: string
+          nullable: true
         user_email:
           type: string
+        user_username:
+          type: string
+        user_state:
+          type: string
+          enum: [verified, unverified, locked]
+        user_jobTitle:
+          type: string
+          nullable: true
+        user_phoneNumber:
+          type: string
+          nullable: true
+        user_admin:
+          type: boolean
+        user_mfa_enabled:
+          type: boolean
         to:
           type: string
         account_name:
@@ -12549,7 +12858,7 @@ components:
     RegisterAccountRequest:
       example:
         userJobTitle: userJobTitle
-        serviceType: Provider
+        serviceType: MSP Service provider
         country: country
         password: password
         accountName: accountName
@@ -12581,10 +12890,15 @@ components:
         companySize:
           type: string
         serviceType:
-          enum:
-          - Provider
-          - Internal
           type: string
+          pattern: '^[A-Za-z0-9 -]{2,20}$'
+          enum:
+            - MSP Service provider
+            - Systems Integrator
+            - Value Added Reseller
+            - Telco
+            - SaaS provider
+            - testing
         numberSites:
           type: integer
         acceptTerms:

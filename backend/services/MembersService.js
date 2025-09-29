@@ -58,28 +58,37 @@ class MembersService {
       return { ...a, [objKeys.join('_')]: val };
     }, {});
 
+    const memberFields = [
+      '_id',
+      'user._id',
+      'user.name',
+      'user.lastName',
+      'user.email',
+      'user.username',
+      'user.state',
+      'user.jobTitle',
+      'user.phoneNumber',
+      'user.admin',
+      'to',
+      'account.name',
+      'account._id',
+      'group',
+      'organization.name',
+      'organization._id',
+      'role',
+      'user.mfa.enabled'
+    ];
+
+    const safeStr = (v) => (v && typeof v.toString === 'function') ? v.toString() : null;
     const response = items.map(mem => {
-      const memItem = pick(
-        '_id',
-        'user._id',
-        'user.name',
-        'user.email',
-        'to',
-        'account.name',
-        'account._id',
-        'group',
-        'organization.name',
-        'organization._id',
-        'role',
-        'user.mfa.enabled'
-      )(mem);
-
-      memItem._id = memItem._id.toString();
-      memItem.user__id = memItem.user__id.toString();
-      memItem.account__id = memItem.account__id.toString();
-      memItem.organization__id = (memItem.organization__id)
-        ? memItem.organization__id.toString() : null;
-
+      const memItem = pick(...memberFields)(mem);
+      memItem._id = safeStr(memItem._id);
+      memItem.user__id = safeStr(memItem.user__id);
+      memItem.account__id = safeStr(memItem.account__id);
+      memItem.organization__id = safeStr(memItem.organization__id);
+      // Ensure boolean fields are never null/undefined to satisfy OpenAPI schema (type:boolean)
+      if (memItem.user_admin == null) memItem.user_admin = false;
+      if (memItem.user_mfa_enabled == null) memItem.user_mfa_enabled = false;
       return memItem;
     });
 
@@ -238,35 +247,220 @@ class MembersService {
    * limit Integer The numbers of items to return (optional)
    * returns List
    **/
-  static async membersGET ({ offset, limit }, { user }) {
+  static async membersGET ({ offset, limit, q, state, sort }, { user }, res) {
     try {
+      // Normalize pagination params
+      let _offset = parseInt(offset, 10);
+      let _limit = parseInt(limit, 10);
+      if (isNaN(_offset) || _offset < 0) _offset = 0;
+      if (isNaN(_limit) || _limit <= 0) _limit = 25;
+      if (_limit > 100) _limit = 100; // safety cap
+      const search = (q && typeof q === 'string' && q.trim() !== '') ? q.trim() : '';
+      // State filter (comma separated) e.g. state=verified or state=unverified,verified
+      let states = [];
+      if (state && typeof state === 'string') {
+        states = state.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      }
+      // Parse sort string (comma separated fields, prefix '-' for desc)
+      const sortMap = {
+        name: 'user.name',
+        lastName: 'user.lastName',
+        email: 'user.email',
+        username: 'user.username',
+        state: 'user.state',
+        jobTitle: 'user.jobTitle',
+        phoneNumber: 'user.phoneNumber',
+        role: 'role',
+        scope: 'to',
+        organization: 'organization.name',
+        account: 'account.name'
+      };
+      let sortSpec = null;
+      if (sort && typeof sort === 'string') {
+        const fields = sort.split(',').map(s => s.trim()).filter(Boolean);
+        fields.forEach(f => {
+          const dir = f.startsWith('-') ? -1 : 1;
+          const key = f.replace(/^[-+]/, '');
+          const mapped = sortMap[key];
+          if (mapped) {
+            sortSpec = sortSpec || {};
+            sortSpec[mapped] = dir;
+          }
+        });
+      }
       let userPromise = null;
+      let countPromise = null;
+      // Build base filter and then augment with search OR conditions over user fields
+      const baseAccountFilter = { account: user.defaultAccount._id };
+      // Guard: user.defaultOrg may be null (e.g. newly created user without org assignment yet)
+      const hasDefaultOrg = !!user.defaultOrg;
+      const orgScopeOr = hasDefaultOrg ? [
+        { to: 'organization', organization: user.defaultOrg._id },
+        { to: 'group', group: user.defaultOrg.group }
+      ] : [];
+      const searchOr = search ? [
+        { 'user.name': { $regex: search, $options: 'i' } },
+        { 'user.lastName': { $regex: search, $options: 'i' } },
+        { 'user.email': { $regex: search, $options: 'i' } },
+        { 'user.username': { $regex: search, $options: 'i' } },
+        { 'organization.name': { $regex: search, $options: 'i' } },
+        { 'account.name': { $regex: search, $options: 'i' } }
+      ] : [];
+      const augmentWithSearch = (filter) => {
+        if (!searchOr.length) return filter;
+        return { $and: [filter, { $or: searchOr }] };
+      };
       // Check the user permission:
       // Account owners or members should be able to see all account users + groups +
       // all organizations users. Organization members should be
       // able to see all organization users
-      if (user.perms.accounts & permissionMasks.get) {
-        userPromise = membership.find({ account: user.defaultAccount._id });
-      } else if (user.perms.organizations & permissionMasks.get) {
-        userPromise = membership.find({
-          account: user.defaultAccount._id,
-          $or: [
-            { to: 'organization', organization: user.defaultOrg._id },
-            { to: 'group', group: user.defaultOrg.group }
-          ]
-        });
+      // Pre-calc userId list if state filter applied
+      let userIdsByState = null;
+      if (states.length > 0) {
+        const usersByState = await Users.find({ state: { $in: states } }, { _id: 1 }).lean();
+        if (!usersByState.length) {
+          if (res) {
+            res.setHeader('X-Total-Count', '0');
+            res.setHeader('X-Offset', _offset.toString());
+            res.setHeader('X-Limit', _limit.toString());
+          }
+          return Service.successResponse([]);
+        }
+        userIdsByState = usersByState.map(u => u._id);
+      }
+
+      // Prefer new members key; fallback to legacy accounts key
+      const canSeeAll = (user.perms.members & permissionMasks.get) ||
+        (user.perms.accounts & permissionMasks.get);
+      if (canSeeAll) {
+        const filter = augmentWithSearch(baseAccountFilter);
+        const finalFilter = userIdsByState ? { ...filter, user: { $in: userIdsByState } } : filter;
+        if (sortSpec) {
+          // Aggregation path for sorting on populated fields
+          const agg = [];
+          agg.push({ $match: finalFilter });
+          agg.push({
+            $lookup: {
+              from: 'users', localField: 'user', foreignField: '_id', as: 'user'
+            }
+          });
+          agg.push({ $unwind: '$user' });
+          agg.push({
+            $lookup: {
+              from: 'accounts', localField: 'account', foreignField: '_id', as: 'account'
+            }
+          });
+          agg.push({ $unwind: '$account' });
+          agg.push({
+            $lookup: {
+              from: 'organizations',
+              localField: 'organization',
+              foreignField: '_id',
+              as: 'organization'
+            }
+          });
+          agg.push({
+            $unwind: { path: '$organization', preserveNullAndEmptyArrays: true }
+          });
+          // Re-apply search for joined docs
+          if (searchOr.length) agg.push({ $match: { $or: searchOr } });
+          agg.push({ $sort: sortSpec });
+          agg.push({ $skip: _offset });
+          agg.push({ $limit: _limit });
+          userPromise = membership.aggregate(agg);
+          const countAgg = agg
+            .filter(stage => !('$skip' in stage) && !('$limit' in stage) &&
+              !('$sort' in stage))
+            .concat([{ $count: 'total' }]);
+          countPromise = membership.aggregate(countAgg)
+            .then(r => (r[0]?.total) || 0);
+        } else {
+          userPromise = membership
+            .find(finalFilter)
+            .skip(_offset)
+            .limit(_limit)
+            .populate('user')
+            .populate('account')
+            .populate('organization');
+          countPromise = membership.countDocuments(finalFilter);
+        }
+      } else if ((user.perms.members & permissionMasks.get) ||
+        (user.perms.organizations & permissionMasks.get && hasDefaultOrg)) {
+        const scopedFilter = { account: user.defaultAccount._id, $or: orgScopeOr };
+        const filter = augmentWithSearch(scopedFilter);
+        const finalFilter = userIdsByState ? { ...filter, user: { $in: userIdsByState } } : filter;
+        if (sortSpec) {
+          const agg = [];
+          agg.push({ $match: finalFilter });
+          agg.push({
+            $lookup: {
+              from: 'users', localField: 'user', foreignField: '_id', as: 'user'
+            }
+          });
+          agg.push({ $unwind: '$user' });
+          agg.push({
+            $lookup: {
+              from: 'accounts', localField: 'account', foreignField: '_id', as: 'account'
+            }
+          });
+          agg.push({ $unwind: '$account' });
+          agg.push({
+            $lookup: {
+              from: 'organizations',
+              localField: 'organization',
+              foreignField: '_id',
+              as: 'organization'
+            }
+          });
+          agg.push({
+            $unwind: { path: '$organization', preserveNullAndEmptyArrays: true }
+          });
+          if (searchOr.length) agg.push({ $match: { $or: searchOr } });
+          agg.push({ $sort: sortSpec });
+          agg.push({ $skip: _offset });
+          agg.push({ $limit: _limit });
+          userPromise = membership.aggregate(agg);
+          const countAgg = agg
+            .filter(stage => !('$skip' in stage) && !('$limit' in stage) &&
+              !('$sort' in stage))
+            .concat([{ $count: 'total' }]);
+          countPromise = membership.aggregate(countAgg)
+            .then(r => (r[0]?.total) || 0);
+        } else {
+          userPromise = membership
+            .find(finalFilter)
+            .skip(_offset)
+            .limit(_limit)
+            .populate('user')
+            .populate('account')
+            .populate('organization');
+          countPromise = membership.countDocuments(finalFilter);
+        }
       }
 
       if (userPromise) {
-        const memList = await userPromise
-          .populate('user')
-          .populate('account')
-          .populate('organization');
+        let memList, total;
+        if (sortSpec) {
+          // Aggregation already returns fully joined docs
+          [memList, total] = await Promise.all([userPromise, countPromise]);
+        } else {
+          [memList, total] = await Promise.all([userPromise, countPromise]);
+        }
 
         const response = MembersService.selectMembersParams(memList);
-
+        // Return pagination meta including total
+        if (res) {
+          res.setHeader('X-Total-Count', total.toString());
+          res.setHeader('X-Offset', _offset.toString());
+          res.setHeader('X-Limit', _limit.toString());
+        }
         return Service.successResponse(response);
       } else {
+        if (res) {
+          res.setHeader('X-Total-Count', '0');
+          res.setHeader('X-Offset', _offset.toString());
+          res.setHeader('X-Limit', _limit.toString());
+        }
         return Service.successResponse([]);
       }
     } catch (e) {

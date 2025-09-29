@@ -197,6 +197,7 @@ Permission mapping (view requires GET bit = 0x1):
 | /account/billing | billing |
 | /account/access-keys | accesstokens |
 | /network | organizations |
+| /users | accounts |
 
 If user lacks the GET permission bit for the mapped key a 403 placeholder is shown.
 

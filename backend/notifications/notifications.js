@@ -179,22 +179,26 @@ class NotificationsManager {
     let response;
     if (account) {
       response = await notificationsConf.find({ account: account }, { rules: 1, _id: 0 }).lean();
-      if (response.length > 0) {
+      if (response && response.length > 0 && response[0]?.rules) {
         const sortedRules = Object.fromEntries(
           Object.entries(response[0].rules).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
         );
         return sortedRules;
       }
-    // If the account doesn't have a default or the user asked the system default
-    // retrieve the system default
     }
-    if (!account || response.length === 0) {
+    // If the account doesn't have a default or the user asked the system
+    // default retrieve the system default
+    if (!account || !response || response.length === 0) {
       response = await notificationsConf.find({ name: 'Default notifications settings' },
         { rules: 1, _id: 0 }).lean();
-      const sortedRules = Object.fromEntries(
-        Object.entries(response[0].rules).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-      );
-      return sortedRules;
+      if (response && response.length > 0 && response[0]?.rules) {
+        const sortedRules = Object.fromEntries(
+          Object.entries(response[0].rules).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+        );
+        return sortedRules;
+      }
+      // As a final fallback return empty object to avoid runtime TypeErrors
+      return {};
     }
   }
 

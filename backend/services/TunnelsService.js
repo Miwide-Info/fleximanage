@@ -261,31 +261,57 @@ class TunnelsService {
       await mongoConns.mainDBwithTransaction(async (session) => {
         for (const tunnel of tunnels) {
           try {
+            // Defensive guards: notifications configuration may not yet exist for this org
+            const orgRules = (orgNotifications && orgNotifications[0] && orgNotifications[0].rules)
+              ? orgNotifications[0].rules
+              : {};
+
             let currentSettingsDict;
-            const orgRules = orgNotifications[0].rules;
             if (tunnel.notificationsSettings) {
               currentSettingsDict = tunnel.notificationsSettings;
-            } else {
+            } else if (Object.keys(orgRules).length > 0) {
               currentSettingsDict = TunnelsService.getOnlyTunnelsEvents(orgRules);
+            } else {
+              // Build a minimal current settings dict from incoming notifications list
+              currentSettingsDict = {};
+              for (const [ev, { warningThreshold, criticalThreshold }]
+                of Object.entries(notifications)) {
+                currentSettingsDict[ev] = {
+                  warningThreshold: (warningThreshold && warningThreshold !== 'varies')
+                    ? warningThreshold
+                    : null,
+                  criticalThreshold: (criticalThreshold && criticalThreshold !== 'varies')
+                    ? criticalThreshold
+                    : null
+                };
+              }
             }
 
             const notificationsDict = {};
             for (const [event, { warningThreshold, criticalThreshold }]
               of Object.entries(notifications)) {
-              let eventCriticalThreshold = currentSettingsDict[event].criticalThreshold;
+              const baseEventSettings = currentSettingsDict[event] || {};
+              let eventCriticalThreshold = baseEventSettings.criticalThreshold;
               if (criticalThreshold !== 'varies') {
                 eventCriticalThreshold = criticalThreshold;
+              }
+              if (eventCriticalThreshold !== undefined) {
                 notificationsDict[event] = notificationsDict[event] || {};
                 notificationsDict[event].criticalThreshold = eventCriticalThreshold;
               }
 
-              let eventWarningThreshold = currentSettingsDict[event].warningThreshold;
+              let eventWarningThreshold = baseEventSettings.warningThreshold;
               if (warningThreshold !== 'varies') {
                 eventWarningThreshold = warningThreshold;
+              }
+              if (eventWarningThreshold !== undefined) {
                 notificationsDict[event] = notificationsDict[event] || {};
                 notificationsDict[event].warningThreshold = eventWarningThreshold;
               }
-              notificationsDict[event].thresholdUnit = orgRules[event].thresholdUnit;
+
+              const thresholdUnit = (orgRules[event] && orgRules[event].thresholdUnit) || null;
+              notificationsDict[event] = notificationsDict[event] || {};
+              notificationsDict[event].thresholdUnit = thresholdUnit;
             }
 
             const invalidNotifications = validateNotificationsSettings(notificationsDict, true);

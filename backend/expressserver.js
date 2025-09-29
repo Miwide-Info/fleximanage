@@ -95,7 +95,7 @@ class ExpressServer {
     this.onListening = this.onListening.bind(this);
     this.launch = this.launch.bind(this);
     this.close = this.close.bind(this);
-  this.httpsEnabled = false; // will flip true only if certs loaded & server created
+    this.httpsEnabled = false; // will flip true only if certs loaded & server created
 
     this.setupMiddleware();
   }
@@ -232,6 +232,8 @@ class ExpressServer {
     // no authentication
     this.app.use('/api/connect', connectRouter);
     this.app.use('/api/users', require('./routes/users'));
+    // Admin audit log (super admin only) – placed early so swagger auth headers processed later
+    this.app.use('/api/users/admin/audit', require('./routes/adminAudit'));
 
     // add API documentation
     this.app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(this.schema));

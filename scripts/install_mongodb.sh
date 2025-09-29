@@ -34,10 +34,11 @@ if [[ "$STOP" == 1 && "$CLEAN" == 1 ]]; then echo "ERROR: STOP=1 and CLEAN=1 can
 
 if [[ "$STOP" == 1 ]]; then
 	log "STOP=1: stopping mongod processes"
-	pids=$(pgrep -f "mongod.*--port=270" || true)
+	# Match any mongod we started (dbpath /data/db270XX) rather than relying on --port syntax
+	pids=$(pgrep -f "/data/db270" || true)
 	if [[ -z "$pids" ]]; then log "No mongod processes"; exit 0; fi
 	kill $pids 2>/dev/null || true; sleep 2
-	leftover=$(pgrep -f "mongod.*--port=270" || true)
+	leftover=$(pgrep -f "/data/db270" || true)
 	[[ -n "$leftover" ]] && kill -9 $leftover 2>/dev/null || true
 	log "Stopped."; exit 0
 fi
@@ -92,7 +93,8 @@ log "[4/7] Creating data dirs"
 USED_PORTS=()
 for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
 	[[ ${#USED_PORTS[@]} -ge $MAX_INSTANCES ]] && break
-	if pgrep -f "mongod.*--port=$port" >/dev/null; then error_exit "Port $port in use (use CLEAN=1)"; fi
+	# Use socket check to determine port availability (more robust than process cmdline pattern)
+	if ss -tuln | grep -q ":$port "; then error_exit "Port $port in use (use CLEAN=1)"; fi
 	d="${DATA_BASE_DIR}$port"; mkdir -p "$d"; USED_PORTS+=("$port")
 done
 [[ ${#USED_PORTS[@]} -eq $MAX_INSTANCES ]] || error_exit "Failed to allocate $MAX_INSTANCES ports"
@@ -102,8 +104,14 @@ log "[5/7] Starting instances"
 mkdir -p "$LOG_DIR"; chown -R mongodb:mongodb "$LOG_DIR"
 for port in "${USED_PORTS[@]}"; do
 	log "Starting port $port"
-	sudo -u mongodb /opt/mongodb-current/bin/mongod --port "$port" --dbpath "${DATA_BASE_DIR}$port" --replSet "$REPLICA_SET_NAME" --bind_ip_all --oplogSize $OPLOG_SIZE_MB --wiredTigerCacheSizeGB 0.25 --fork --logpath "$LOG_DIR/mongod-$port.log"
-	sleep 1; pgrep -f "mongod.*--port=$port" >/dev/null || error_exit "Instance $port failed (see $LOG_DIR/mongod-$port.log)"
+	# Use --port=$port form for consistent pattern should future pattern matching rely on '='
+	sudo -u mongodb /opt/mongodb-current/bin/mongod --port=$port --dbpath "${DATA_BASE_DIR}$port" --replSet "$REPLICA_SET_NAME" --bind_ip_all --oplogSize $OPLOG_SIZE_MB --wiredTigerCacheSizeGB 0.25 --fork --logpath "$LOG_DIR/mongod-$port.log" || error_exit "mongod launch command failed for $port"
+	sleep 1
+	# Verify via socket presence instead of cmdline substring
+	if ! ss -tuln | grep -q ":$port "; then
+		log "DEBUG: mongod output (tail)"; tail -n 20 "$LOG_DIR/mongod-$port.log" || true
+		error_exit "Instance $port failed (see $LOG_DIR/mongod-$port.log)"
+	fi
 done
 
 log "[6/7] Replica set init"
