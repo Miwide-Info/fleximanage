@@ -279,6 +279,7 @@ router.route('/register')
 // Mounted at /api/users, so path here should NOT repeat /users
 router.route('/:id/verify')
   .post(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    console.log('[DEBUG verify] req.user && admin:', !!(req.user && req.user.admin), 'userId:', req.user && req.user._id);
     try {
       // Only super admin (user.admin === true) may approve
       if (!req.user || req.user.admin !== true) {
@@ -310,6 +311,7 @@ router.route('/:id/verify')
 // DELETE /api/users/:id/admin -> demote (admin=false)
 router.route('/:id/admin')
   .put(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    console.log('[DEBUG promote] req.user.admin:', req.user && req.user.admin, 'userId:', req.user && req.user._id);
     try {
       if (!req.user || req.user.admin !== true) {
         return next(createError(403, 'Only super admin can promote admin'));
@@ -333,6 +335,7 @@ router.route('/:id/admin')
     }
   })
   .delete(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    console.log('[DEBUG demote] req.user.admin:', req.user && req.user.admin, 'userId:', req.user && req.user._id);
     try {
       if (!req.user || req.user.admin !== true) {
         return next(createError(403, 'Only super admin can demote admin'));
@@ -666,6 +669,21 @@ router.route('/login')
         }
       }
 
+      // 强制查一次数据库，确保 admin 字段是最新
+
+      const freshUser = await User.findById(req.user._id)
+        .populate('defaultOrg')
+        .populate('defaultAccount');
+      if (!freshUser) {
+        return next(createError(401, 'User not found'));
+      }
+      // 强制保证 admin 字段为 Boolean
+      freshUser.admin = !!freshUser.admin;
+      req.user = freshUser;
+      // 打印日志辅助调试
+      console.log('freshUser.admin:', freshUser.admin);
+      console.log('req.user.admin:', req.user.admin);
+
       // if user enabled 2fa or account forces using it- send login process token
       // else, allow login without mfa
       const isUserEnabledMfa = req.user?.mfa?.enabled;
@@ -843,8 +861,8 @@ router.route('/mfa/verify')
 // This function generates the JWT after the authentication process is complete.
 // With this token, the user can access and receive the organization's information.
 const sendJwtToken = async (req, res, mfaVerified) => {
-  const token = await getToken(req, { mfaVerified });
-  const refreshToken = await getRefreshToken(req, { mfaVerified });
+  const token = await getToken({ user: req.user }, { mfaVerified });
+  const refreshToken = await getRefreshToken({ user: req.user }, { mfaVerified });
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Refresh-JWT', token);

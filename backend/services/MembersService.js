@@ -291,7 +291,13 @@ class MembersService {
       let userPromise = null;
       let countPromise = null;
       // Build base filter and then augment with search OR conditions over user fields
-      const baseAccountFilter = { account: user.defaultAccount._id };
+      let baseAccountFilter;
+      if (user.admin === true) {
+        // Super admin: see all memberships (across all accounts)
+        baseAccountFilter = {};
+      } else {
+        baseAccountFilter = { account: user.defaultAccount._id };
+      }
       // Guard: user.defaultOrg may be null (e.g. newly created user without org assignment yet)
       const hasDefaultOrg = !!user.defaultOrg;
       const orgScopeOr = hasDefaultOrg ? [

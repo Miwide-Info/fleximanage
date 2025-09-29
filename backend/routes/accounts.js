@@ -124,7 +124,7 @@ accountsRouter.route('/:accountId')
         { upsert: false, new: true, runValidators: true });
 
       // Update token
-      const token = await getToken(req, { accountName: account.name });
+  const token = await getToken({ user: req.user }, { accountName: account.name });
       res.setHeader('Refresh-JWT', token);
 
       // Return organization

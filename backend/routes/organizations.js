@@ -102,7 +102,7 @@ organizationsRouter.route('/')
       .then(async () => {
         // Session committed, set to null
         session = null;
-        const token = await getToken(req, { org: org._id, orgName: org.name });
+  const token = await getToken({ user: req.user }, { org: org._id, orgName: org.name });
         res.setHeader('Refresh-JWT', token);
         return res.status(200).json(org);
       })
@@ -142,7 +142,7 @@ organizationsRouter.route('/select')
         .then(async (updUser) => {
           // Success, return OK and refresh JWT with new values
           req.user.defaultOrg = updUser.defaultOrg;
-          const token = await getToken(req, {
+          const token = await getToken({ user: req.user }, {
             org: updUser.defaultOrg._id,
             orgName: updUser.defaultOrg.name
           });
@@ -281,7 +281,7 @@ organizationsRouter.route('/:orgId')
           { upsert: false, multi: false, new: true, runValidators: true }
         );
         // Update token
-        const token = await getToken(req, { orgName: req.body.name });
+  const token = await getToken({ user: req.user }, { orgName: req.body.name });
         res.setHeader('Refresh-JWT', token);
         return res.status(200).json(resultOrg);
       } else {

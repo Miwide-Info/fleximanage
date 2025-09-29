@@ -254,7 +254,10 @@ exports.verifyUserJWT = function (req, res, next) {
             // Attach the token to the headers and let
             // the request continue to the next middleware.
             req.user = userDetails;
-            const token = await getToken(req, { mfaVerified: decodedToken.mfaVerified ?? false });
+            const token = await getToken(
+              { user: userDetails },
+              { mfaVerified: decodedToken.mfaVerified ?? false }
+            );
             res.setHeader('Refresh-JWT', token);
 
             // Manually set the user details and permissions

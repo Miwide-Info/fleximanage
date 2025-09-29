@@ -235,7 +235,7 @@ export default function AccountMembers () {
                               onClick={async () => {
                                 try {
                                   await api.post(`/users/${r.user__id}/verify`);
-                                  load({ page, pageSize, q: debouncedSearch, states: stateFilters, sort });
+                                  window.location.reload();
                                 } catch (e) {
                                   // eslint-disable-next-line no-alert
                                   alert('Verify failed: ' + (e.message || 'error'));
@@ -250,7 +250,7 @@ export default function AccountMembers () {
                                 if (!window.confirm('Demote this admin user?')) return;
                                 try {
                                   await api.delete(`/users/${r.user__id}/admin`);
-                                  load({ page, pageSize, q: debouncedSearch, states: stateFilters, sort });
+                                  window.location.reload();
                                 } catch (e) {
                                   // eslint-disable-next-line no-alert
                                   alert('Demote failed: ' + (e.message || 'error'));
@@ -263,7 +263,7 @@ export default function AccountMembers () {
                               onClick={async () => {
                                 try {
                                   await api.put(`/users/${r.user__id}/admin`);
-                                  load({ page, pageSize, q: debouncedSearch, states: stateFilters, sort });
+                                  window.location.reload();
                                 } catch (e) {
                                   // eslint-disable-next-line no-alert
                                   alert('Promote failed: ' + (e.message || 'error'));

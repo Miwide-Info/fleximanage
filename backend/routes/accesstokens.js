@@ -74,7 +74,7 @@ router.route('/')
         isValid: true
       });
       const token = await getToken(
-        req,
+        { user: req.user },
         {
           type: 'app_access_token',
           id: accessToken._id.toString(),
