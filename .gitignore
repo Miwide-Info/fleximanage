@@ -1,5 +1,9 @@
 # Logs
 *.log
+logs/
+backend/logs/
+logs/*.log
+backend/logs/*.log
 
 # tars
 *.tar.gz
