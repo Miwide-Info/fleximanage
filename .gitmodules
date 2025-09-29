@@ -7,9 +7,7 @@
 # If you do not have access to these private repositories you can safely ignore the
 # submodule initialization errors or comment out these sections entirely.
 
-[submodule "client"]
-	path = client
-	url = git@gitlab.com:flexiwangroup/fleximanageui.git
+# The legacy top-level 'client' directory (empty in this fork) has been removed as part of cleanup.
 
 [submodule "backend/billing"]
 	path = backend/billing
