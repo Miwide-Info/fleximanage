@@ -18,6 +18,7 @@ import Firewall from './pages/Firewall';
 import QoS from './pages/QoS';
 import Monitoring from './pages/Monitoring';
 import Settings from './pages/Settings';
+import Tokens from './pages/Tokens';
 import Login from './pages/Login';
 import VerifyAccount from './pages/VerifyAccount';
 import { decodeJwtPayload, extractPerms, hasViewPermission } from './auth/permissions';
@@ -105,6 +106,7 @@ function App() {
           <Route path="/firewall" element={<Guard permKey="firewallpolicies" element={<Firewall />} />} />
           <Route path="/qos" element={<Guard permKey="qospolicies" element={<QoS />} />} />
           <Route path="/monitoring" element={<Guard permKey="devices" element={<Monitoring />} />} />
+          <Route path="/tokens" element={<Guard permKey="accesstokens" element={<Tokens />} />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </div>

@@ -1,0 +1,40 @@
+From a529313fe324b0a156f35194ffd563f1e6e2ed25 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E2=80=98aikonlee=E2=80=99?= <‘aikonlee@qq.com’>
+Date: Mon, 29 Sep 2025 14:54:31 +0800
+Subject: [PATCH] feat(users): allow self-demote when more than one admin
+ remains
+
+---
+ backend/routes/users.js | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/backend/routes/users.js b/backend/routes/users.js
+index 60dae39c..65904bd3 100644
+--- a/backend/routes/users.js
++++ b/backend/routes/users.js
+@@ -342,17 +342,18 @@ router.route('/:id/admin')
+       }
+       const targetId = req.params.id;
+       if (!targetId) return next(createError(400, 'Missing user id'));
+-      if (targetId === req.user._id.toString()) {
+-        return next(createError(400, 'Cannot demote yourself'));
+-      }
++      // allow self-demote if not the last remaining admin
+       const target = await User.findOne({ _id: targetId });
+       if (!target) return next(createError(404, 'User not found'));
+       if (target.admin !== true) {
+         return res.status(200).json({ status: 'already non-admin' });
+       }
+       const adminCount = await User.countDocuments({ admin: true });
++      console.log('[DEBUG demote] adminCount:', adminCount,
++        'targetId:', targetId,
++        'selfId:', req.user._id.toString());
+       if (adminCount <= 1) {
+-        return next(createError(400, 'Cannot demote the last remaining admin'));
++        return next(createError(400, 'Cannot demote the last remaining admin (adminCount=1)'));
+       }
+       target.admin = false;
+       await target.save();
+-- 
+2.43.0
+

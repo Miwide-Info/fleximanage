@@ -17,7 +17,7 @@ import './Sidebar.css';
 
 const Sidebar = ({ collapsed }) => {
   // Default: Account group collapsed
-  const [openSections, setOpenSections] = useState({ account: false });
+  const [openSections, setOpenSections] = useState({ account: false, inventory: false });
 
   const toggleSection = (key) => {
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -39,6 +39,15 @@ const Sidebar = ({ collapsed }) => {
       ]
     },
     { type: 'item', path: '/users', icon: <FaUsers />, label: 'Users' },
+    {
+      type: 'group',
+      key: 'inventory',
+      icon: <FaServer />, // reuse server icon; could swap for a different one later
+      label: 'Inventory',
+      children: [
+        { path: '/tokens', label: 'Tokens' }
+      ]
+    },
     { type: 'item', path: '/devices', icon: <FaServer />, label: 'Devices' },
     { path: '/network', icon: <FaNetworkWired />, label: 'Network' },
     { path: '/tunnels', icon: <FaRoute />, label: 'Tunnels' },
