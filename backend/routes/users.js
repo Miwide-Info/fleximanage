@@ -342,17 +342,18 @@ router.route('/:id/admin')
       }
       const targetId = req.params.id;
       if (!targetId) return next(createError(400, 'Missing user id'));
-      if (targetId === req.user._id.toString()) {
-        return next(createError(400, 'Cannot demote yourself'));
-      }
+      // allow self-demote if not the last remaining admin
       const target = await User.findOne({ _id: targetId });
       if (!target) return next(createError(404, 'User not found'));
       if (target.admin !== true) {
         return res.status(200).json({ status: 'already non-admin' });
       }
       const adminCount = await User.countDocuments({ admin: true });
+      console.log('[DEBUG demote] adminCount:', adminCount,
+        'targetId:', targetId,
+        'selfId:', req.user._id.toString());
       if (adminCount <= 1) {
-        return next(createError(400, 'Cannot demote the last remaining admin'));
+        return next(createError(400, 'Cannot demote the last remaining admin (adminCount=1)'));
       }
       target.admin = false;
       await target.save();
