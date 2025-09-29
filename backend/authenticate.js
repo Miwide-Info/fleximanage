@@ -220,7 +220,9 @@ exports.verifyUserJWT = function (req, res, next) {
     logger.debug('verifyUserJWT: OPTIONS request');
     return next();
     // Check if an API call
-  } else if (req.url.startsWith('/api') || req.url.includes('/mfa')) {
+  } else if ((req.originalUrl && req.originalUrl.startsWith('/api')) || req.url.includes('/mfa')) {
+    // 调试：打印用于判定路径的 url / originalUrl
+    logger.debug('verifyUserJWT path check', { params: { url: req.url, originalUrl: req.originalUrl } });
     passport.authenticate('jwt', { session: false }, async (err, user, info) => {
       if (err || !user) {
         // If the JWT token has expired, but the request
@@ -295,6 +297,7 @@ exports.verifyUserJWT = function (req, res, next) {
       // update later if necessary. If not set Firefox bug uses garbage value.
       if (!res.getHeaders()['refresh-jwt']) res.setHeader('Refresh-JWT', '');
       req.user = user;
+      logger.debug('verifyUserJWT success', { params: { userId: user && user._id, admin: user && user.admin } });
       // Try to update organization if null
       await orgUpdateFromNull(req, res);
       // Add userId to the request for logging purposes.
