@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   contact:
-    email: yourfriends@flexiwan.com
+    email: yourfriends@miwide.com
     name: API support
     url: https://flexiwan.com
   description: This is the REST API for flexiWAN management.

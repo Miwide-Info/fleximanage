@@ -1,5 +1,5 @@
 // flexiWAN SD-WAN software - flexiEdge, flexiManage.
-// For more information go to https://flexiwan.com
+// For more information go to https://miwide.com
 // Copyright (C) 2020  flexiWAN Ltd.
 
 // This program is free software: you can redistribute it and/or modify
@@ -60,9 +60,9 @@ const configEnv = {
   // This is the default configuration, override by the following sections
   default: {
     // URL of the rest server
-    restServerUrl: ['https://local.flexiwan.com:3443'],
+    restServerUrl: ['https://local.miwide.com:3443'],
     // URL of the UI server
-    uiServerUrl: ['https://local.flexiwan.com:3000'],
+    uiServerUrl: ['https://local.miwide.com:3000'],
     // Key used for users tokens, override default with environment variable USER_SECRET_KEY
     userTokenSecretKey: 'abcdefg1234567',
     // Whether to validate open API response. True for testing and dev, False for production,
@@ -105,7 +105,7 @@ const configEnv = {
     // Mongo VPN database
     mongoVpnUrl: `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexivpn?replicaSet=rs`,
     // Billing Redirect OK page url
-    billingRedirectOkUrl: 'https://local.flexiwan.com/ok.html',
+    billingRedirectOkUrl: 'https://local.miwide.com/ok.html',
     // Biling config site - this is used as the billing site name in ChargeBee
     billingConfigSite: 'flexiwan-test',
     // ChargeBee default plan for a new customer
@@ -154,19 +154,19 @@ const configEnv = {
     shouldRedirectHttps: false,
     // Certificate key location, under bin directory
     // On production if the key located in the Let's encrypt directory, it's possible to link to it using:
-    // sudo ln -s /etc/letsencrypt/live/app.flexiwan.com/privkey.pem ~/FlexiWanSite/bin/cert.app.flexiwan.com/domain.key
-    httpsCertKey: '/cert.local.flexiwan.com/domain.key',
+    // sudo ln -s /etc/letsencrypt/live/app.miwide.com/privkey.pem ~/FlexiWanSite/bin/cert.app.miwide.com/domain.key
+    httpsCertKey: '/cert.local.miwide.com/domain.key',
     // Certificate location, under bin directory
     // On production if the key located in the Let's encrypt directory, it's possible to link to it using:
-    // sudo ln -s /etc/letsencrypt/live/app.flexiwan.com/fullchain.pem ~/FlexiWanSite/bin/cert.app.flexiwan.com/certificate.pem
-    httpsCert: '/cert.local.flexiwan.com/certificate.pem',
+    // sudo ln -s /etc/letsencrypt/live/app.miwide.com/fullchain.pem ~/FlexiWanSite/bin/cert.app.miwide.com/certificate.pem
+    httpsCert: '/cert.local.miwide.com/certificate.pem',
     // Default agent broker the device tries to create connection for
     // The broker is sent to the device when it registers.
     // It's possible to use multiple brokers in case of multiple domains, in that case
     // the system will use the last broker that matches the domain used in the token or the first broker if not found
-    agentBroker: ['local.flexiwan.com:3443'],
+    agentBroker: ['local.miwide.com:3443'],
     // Whitelist of allowed domains for CORS checks
-    corsWhiteList: ['http://local.flexiwan.com:3000', 'https://local.flexiwan.com:3000', 'https://local.flexiwan.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
+    corsWhiteList: ['http://local.miwide.com:3000', 'https://local.miwide.com:3000', 'https://local.miwide.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
   // Client static root directory (auto-detected: prefers production build if exists)
   clientStaticDir: detectedClientStaticDir,
     // Mgmt-Agent protocol version
@@ -183,16 +183,16 @@ const configEnv = {
     // Bypass mailer certificate validation
     mailerBypassCert: false,
     // From address used when sending emails
-    mailerFromAddress: 'noreply@flexiwan.com',
+    mailerFromAddress: 'noreply@miwide.com',
     // Mail envelop from address
-    mailerEnvelopeFromAddress: 'flexiWAN <noreply@flexiwan.com>',
+    mailerEnvelopeFromAddress: 'flexiWAN <noreply@miwide.com>',
     // Allow users registration, otherwise by invitation only
     allowUsersRegistration: true,
     // Software version query link
-    SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest',
+    SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest',
     // Software version update email link. ${version} is replaced in run time
     // eslint-disable-next-line no-template-curly-in-string
-    SwVersionUpdateUrl: 'https://sandbox.flexiwan.com/Templates/notification_email_${version}.json',
+    SwVersionUpdateUrl: 'https://sandbox.miwide.com/Templates/notification_email_${version}.json',
     // Web hooks add user URL, used to send for new uses, '' to bypass hook
     webHookAddUserUrl: '',
     // Web hooks add user secret, send in addition to the message for filtering
@@ -202,9 +202,9 @@ const configEnv = {
     // Web hooks register device secret, send in addition to the message for filtering
     webHookRegisterDeviceSecret: 'ABC',
     // Global app identification rules file location
-    appRulesUrl: 'https://sandbox.flexiwan.com/Protocols/app-rules.json',
+    appRulesUrl: 'https://sandbox.miwide.com/Protocols/app-rules.json',
     // Global applications file locations
-    applicationsUrl: 'https://sandbox.flexiwan.com/Templates/applications.json',
+    applicationsUrl: 'https://sandbox.miwide.com/Templates/applications.json',
     // Default port for tunnels
     tunnelPort: '4789',
     // If to allow manager role to delete organizations, devices, tokens, tunnels, appIdentifications,
@@ -243,7 +243,7 @@ const configEnv = {
     // TCP clamping header size, this value will be reduced from the MTU when calculating the mss clamping size
     tcpClampingHeaderSize: 40,
     // flexiVpn server portal url
-    flexiVpnServer: ['https://localvpn.flexiwan.com:4443'], // can be string or list
+    flexiVpnServer: ['https://localvpn.miwide.com:4443'], // can be string or list
     // After successful vpn client authentication, the OpenVPN server will generate tmp token valid for the below number of seconds.
     // On the following renegotiations, the OpenVPN client will pass this token instead of the users password
     vpnTmpTokenTime: 43200,
@@ -270,9 +270,9 @@ const configEnv = {
     // Name of the company, is used in email templates
     companyName: 'flexiWAN',
     // URL that appears in contact us link in the UI,
-    contactUsUrl: 'mailto:yourfriends@flexiwan.com',
+    contactUsUrl: 'mailto:yourfriends@miwide.com',
     // Repository setup URL
-    agentRepositoryUrl: 'https://deb.flexiwan.com/setup',
+    agentRepositoryUrl: 'https://deb.miwide.com/setup',
   // Captcha site (public) key exposed to client. Override with env CAPTCHA_SITE_KEY.
   // NOTE: Previously a hard-coded fallback key was shipped which could trigger
   // "Invalid domain for site key" errors in development when the domain was not
@@ -291,9 +291,9 @@ const configEnv = {
     // Whether to remove branding, e.g. powered by...
     removeBranding: false,
     // URL for account qualification
-    qualifiedAccountsURL: 'https://www.flexiwan.com',
+    qualifiedAccountsURL: 'https://www.miwide.com',
     // VPN portal URL
-    vpnBaseUrl: ['https://localvpn.flexiwan.com:8000'],
+    vpnBaseUrl: ['https://localvpn.miwide.com:8000'],
     // Post registration redirect URL
     registerRedirectUrl: '',
     // GTM tag in the format of GTM-XXXXXXX
@@ -313,15 +313,15 @@ const configEnv = {
       'https://manage.miwide.com:443'
     ],
     mailerBypassCert: true,
-    SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest-testing',
+    SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest-testing',
     userTokenExpiration: 604800,
     logLevel: 'debug',
     mailerPort: 1025,
     // Enable HTTPS & redirect automatically in local development so no need for env vars each run
     shouldRedirectHttps: true,
     // Use relative (no leading slash) so path.join(__dirname,'bin',value) resolves correctly
-    httpsCertKey: 'cert.local.flexiwan.com/domain.key',
-    httpsCert: 'cert.local.flexiwan.com/certificate.pem'
+    httpsCertKey: 'cert.local.miwide.com/domain.key',
+    httpsCert: 'cert.local.miwide.com/certificate.pem'
   },
   testing: {
     // Mgmt-Agent protocol version for testing purposes
@@ -332,11 +332,11 @@ const configEnv = {
   },
   // Override for production environment
   production: {
-    restServerUrl: ['https://app.flexiwan.com:443'],
-    uiServerUrl: ['https://app.flexiwan.com:443'],
+    restServerUrl: ['https://app.miwide.com:443'],
+    uiServerUrl: ['https://app.miwide.com:443'],
     shouldRedirectHttps: false,
     redirectHttpsPort: 443,
-    agentBroker: ['app.flexiwan.com:443'],
+    agentBroker: ['app.miwide.com:443'],
     validateOpenAPIResponse: false,
   clientStaticDir: '../frontend/build',
     // 'billingConfigSite': 'flexiwan-test',
@@ -344,11 +344,11 @@ const configEnv = {
     // 'useFlexiBilling': true,
     logFilePath: '/var/log/flexiwan/flexiwan.log',
     reqLogFilePath: '/var/log/flexiwan/flexiwanReq.log',
-    billingRedirectOkUrl: 'https://app.flexiwan.com/ok.html',
+    billingRedirectOkUrl: 'https://app.miwide.com/ok.html',
     logLevel: 'info',
     logUserName: true,
-    corsWhiteList: ['https://app.flexiwan.com:443', 'http://app.flexiwan.com:80'],
-    vpnBaseUrl: ['https://vpn.flexiwan.com']
+    corsWhiteList: ['https://app.miwide.com:443', 'http://app.miwide.com:80'],
+    vpnBaseUrl: ['https://vpn.miwide.com']
   },
   hosted: {
     // modify next params for hosted server
@@ -366,18 +366,18 @@ const configEnv = {
     useFlexiBilling: true,
     logFilePath: '/var/log/flexiwan/flexiwan.log',
     reqLogFilePath: '/var/log/flexiwan/flexiwanReq.log',
-    SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest',
+    SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest',
     logLevel: 'info',
     logUserName: true
   },
   // Override for manage environment for production
   manage: {
-    restServerUrl: ['https://manage.flexiwan.com:443'],
-    uiServerUrl: ['https://manage.flexiwan.com:443'],
+    restServerUrl: ['https://manage.miwide.com:443'],
+    uiServerUrl: ['https://manage.miwide.com:443'],
     shouldRedirectHttps: false,
     redirectHttpsPort: 443,
     kuePrefix: 'mngdeviceq',
-    agentBroker: ['manage.flexiwan.com:443'],
+    agentBroker: ['manage.miwide.com:443'],
     validateOpenAPIResponse: false,
   clientStaticDir: '../frontend/build',
     logFilePath: '/var/log/flexiwan/flexiwan.log',
@@ -385,62 +385,62 @@ const configEnv = {
     billingConfigSite: 'flexiwan',
     billingDefaultPlan: 'enterprise',
     useFlexiBilling: true,
-    billingRedirectOkUrl: 'https://manage.flexiwan.com/ok.html',
-    SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest',
+    billingRedirectOkUrl: 'https://manage.miwide.com/ok.html',
+    SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest',
     logLevel: 'info',
     logUserName: true,
-    corsWhiteList: ['https://manage.flexiwan.com:443', 'http://manage.flexiwan.com:80'],
-    vpnBaseUrl: ['https://vpn.flexiwan.com']
+    corsWhiteList: ['https://manage.miwide.com:443', 'http://manage.miwide.com:80'],
+    vpnBaseUrl: ['https://vpn.miwide.com']
   },
   // Override for appqa01 environment
   appqa01: {
-    restServerUrl: ['https://appqa01.flexiwan.com:443'],
-    uiServerUrl: ['https://appqa01.flexiwan.com:443'],
+    restServerUrl: ['https://appqa01.miwide.com:443'],
+    uiServerUrl: ['https://appqa01.miwide.com:443'],
     shouldRedirectHttps: false,
     redirectHttpsPort: 443,
     userTokenExpiration: 300,
     userIpReqRateLimit: 3000,
     unreadNotificationPeriod: 300000,
     userRefreshTokenExpiration: 86400,
-    agentBroker: ['appqa01.flexiwan.com:443'],
+    agentBroker: ['appqa01.miwide.com:443'],
   clientStaticDir: '../frontend/build',
     logFilePath: '/var/log/flexiwan/flexiwan.log',
     reqLogFilePath: '/var/log/flexiwan/flexiwanReq.log',
     billingConfigSite: 'flexiwan-test',
     billingDefaultPlan: 'enterprise',
     useFlexiBilling: true,
-    billingRedirectOkUrl: 'https://appqa01.flexiwan.com/ok.html',
-    SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest-testing',
+    billingRedirectOkUrl: 'https://appqa01.miwide.com/ok.html',
+    SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest-testing',
     logLevel: 'debug',
     logUserName: true,
-    corsWhiteList: ['https://appqa01.flexiwan.com:443', 'http://appqa01.flexiwan.com:80'],
-    flexiVpnServer: 'https://vpnqa01.flexiwan.com:443', // can be string or list
-    vpnBaseUrl: ['https://vpnqa01.flexiwan.com']
+    corsWhiteList: ['https://appqa01.miwide.com:443', 'http://appqa01.miwide.com:80'],
+    flexiVpnServer: 'https://vpnqa01.miwide.com:443', // can be string or list
+    vpnBaseUrl: ['https://vpnqa01.miwide.com']
   },
   // Override for appqa02 environment
   appqa02: {
-    restServerUrl: ['https://appqa02.flexiwan.com:443'],
-    uiServerUrl: ['https://appqa02.flexiwan.com:443'],
+    restServerUrl: ['https://appqa02.miwide.com:443'],
+    uiServerUrl: ['https://appqa02.miwide.com:443'],
     shouldRedirectHttps: false,
     redirectHttpsPort: 443,
     userTokenExpiration: 300,
     userIpReqRateLimit: 3000,
     unreadNotificationPeriod: 300000,
     userRefreshTokenExpiration: 86400,
-    agentBroker: ['appqa02.flexiwan.com:443'],
+    agentBroker: ['appqa02.miwide.com:443'],
   clientStaticDir: '../frontend/build',
     logFilePath: '/var/log/flexiwan/flexiwan.log',
     reqLogFilePath: '/var/log/flexiwan/flexiwanReq.log',
     billingConfigSite: 'flexiwan-test',
     billingDefaultPlan: 'enterprise',
     useFlexiBilling: true,
-    billingRedirectOkUrl: 'https://appqa02.flexiwan.com/ok.html',
-    SwRepositoryUrl: 'https://deb.flexiwan.com/info/flexiwan-router/latest-testing',
+    billingRedirectOkUrl: 'https://appqa02.miwide.com/ok.html',
+    SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest-testing',
     logLevel: 'debug',
     logUserName: true,
-    corsWhiteList: ['https://appqa02.flexiwan.com:443', 'http://appqa02.flexiwan.com:80'],
-    flexiVpnServer: 'https://vpnqa02.flexiwan.com:443', // can be string or list
-    vpnBaseUrl: ['https://vpnqa02.flexiwan.com']
+    corsWhiteList: ['https://appqa02.miwide.com:443', 'http://appqa02.miwide.com:80'],
+    flexiVpnServer: 'https://vpnqa02.miwide.com:443', // can be string or list
+    vpnBaseUrl: ['https://vpnqa02.miwide.com']
   }
 };
 

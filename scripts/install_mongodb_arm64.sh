@@ -1,11 +1,21 @@
 #!/bin/bash
 set -euo pipefail
 
-# MongoDB 4.0.9 Replica Set Helper (3-node) -- canonical location scripts/install_mongodb.sh
+# MongoDB Replica Set Helper (3-node) -- canonical location scripts/install_mongodb.sh
+# Updated for arm64 support
 
-MONGO_VERSION="4.0.9"
-DIST_SUFFIX="ubuntu1804"
-MONGO_DOWNLOAD_URL="https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-${DIST_SUFFIX}-${MONGO_VERSION}.tgz"
+# Auto-detect architecture
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64) MONGO_ARCH="x86_64";;
+    aarch64|arm64) MONGO_ARCH="aarch64";;
+    *) echo "ERROR: Unsupported architecture: $ARCH"; exit 1;;
+esac
+
+# MongoDB version - use 4.4.0 as it's the first with official arm64 support
+MONGO_VERSION="4.4.0"
+DIST_SUFFIX="ubuntu2004"  # Compatible with Ubuntu 20.04+
+MONGO_DOWNLOAD_URL="https://fastdl.mongodb.org/linux/mongodb-linux-${MONGO_ARCH}-${DIST_SUFFIX}-${MONGO_VERSION}.tgz"
 MONGO_INSTALL_DIR="/opt/mongodb-${MONGO_VERSION}"
 DATA_BASE_DIR="/data/db"
 REPLICA_SET_NAME="rs"
@@ -60,14 +70,18 @@ if [[ "$STATUS" == 1 ]]; then
 	done; exit 0
 fi
 
-log "[1/7] Preparing environment for MongoDB ${MONGO_VERSION}"
+log "[1/7] Preparing environment for MongoDB ${MONGO_VERSION} (${MONGO_ARCH})"
 
-if ! dpkg-query -W -f='${Status}' libssl1.1:amd64 2>/dev/null | grep -q "install ok installed"; then
-	log "Installing libssl1.1 dependency"
-	wget -qO /tmp/libssl1.1.deb http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb || error_exit "Download libssl1.1 failed"
-	dpkg -i /tmp/libssl1.1.deb
-	dpkg-query -W -f='${Status}' libssl1.1:amd64 2>/dev/null | grep -q "install ok installed" || error_exit "libssl1.1 install failed"
+# Create mongodb user if it doesn't exist
+if ! id -u mongodb &>/dev/null; then
+    log "Creating mongodb user"
+    useradd --system --home /var/lib/mongodb --shell /bin/false mongodb
 fi
+
+# Install required dependencies through apt instead of downloading specific packages
+log "Installing dependencies"
+apt update -qq
+apt install -y wget curl gnupg lsb-release
 
 if [[ "$CLEAN" == 1 ]]; then
 	log "CLEAN=1 removing old processes & data"
@@ -80,9 +94,12 @@ if [[ "$CLEAN" == 1 ]]; then
 	rm -rf /data/db270* || true
 fi
 
-log "[2/7] Downloading MongoDB ${MONGO_VERSION}"
+log "[2/7] Downloading MongoDB ${MONGO_VERSION} for ${MONGO_ARCH}"
 DOWNLOAD_PATH="/tmp/mongodb-${MONGO_VERSION}.tgz"
-[[ -f "$DOWNLOAD_PATH" ]] || wget -qO "$DOWNLOAD_PATH" "$MONGO_DOWNLOAD_URL" || error_exit "Download failed"
+if [[ ! -f "$DOWNLOAD_PATH" ]]; then
+    log "Downloading from: $MONGO_DOWNLOAD_URL"
+    wget -qO "$DOWNLOAD_PATH" "$MONGO_DOWNLOAD_URL" || error_exit "Download failed. URL: $MONGO_DOWNLOAD_URL"
+fi
 
 log "[3/7] Extracting"
 mkdir -p "$MONGO_INSTALL_DIR" ; tar -xzf "$DOWNLOAD_PATH" -C "$MONGO_INSTALL_DIR" --strip-components=1
@@ -98,6 +115,7 @@ for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
 	d="${DATA_BASE_DIR}$port"; mkdir -p "$d"; USED_PORTS+=("$port")
 done
 [[ ${#USED_PORTS[@]} -eq $MAX_INSTANCES ]] || error_exit "Failed to allocate $MAX_INSTANCES ports"
+
 chown -R mongodb:mongodb "$DATA_BASE_DIR"270* 2>/dev/null || true
 
 log "[5/7] Starting instances"

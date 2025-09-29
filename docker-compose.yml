@@ -1,0 +1,183 @@
+services:
+  # MongoDB Replica Set (3 nodes)
+  mongo-primary:
+    image: mongo:4.4
+    platform: linux/arm64
+    container_name: flexi-mongo-primary
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    command: |
+      mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256
+    volumes:
+      - mongo_primary_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - flexi-network
+
+  mongo-secondary1:
+    image: mongo:4.4
+    platform: linux/arm64
+    container_name: flexi-mongo-secondary1
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    command: |
+      mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256
+    volumes:
+      - mongo_secondary1_data:/data/db
+    depends_on:
+      - mongo-primary
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - flexi-network
+
+  mongo-secondary2:
+    image: mongo:4.4
+    platform: linux/arm64
+    container_name: flexi-mongo-secondary2
+    restart: unless-stopped
+    ports:
+      - "27019:27017"
+    command: |
+      mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256
+    volumes:
+      - mongo_secondary2_data:/data/db
+    depends_on:
+      - mongo-primary
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - flexi-network
+
+  # MongoDB Replica Set Initialization
+  mongo-setup:
+    image: mongo:4.4
+    platform: linux/arm64
+    container_name: flexi-mongo-setup
+    restart: "no"
+    depends_on:
+      mongo-primary:
+        condition: service_healthy
+      mongo-secondary1:
+        condition: service_healthy
+      mongo-secondary2:
+        condition: service_healthy
+    command: |
+      bash -c "
+        sleep 10
+        echo 'Configuring MongoDB replica set...'
+        mongo --host mongo-primary:27017 --eval '
+          rs.initiate({
+            _id: \"rs\",
+            members: [
+              { _id: 0, host: \"mongo-primary:27017\", priority: 2 },
+              { _id: 1, host: \"mongo-secondary1:27017\", priority: 1 },
+              { _id: 2, host: \"mongo-secondary2:27017\", priority: 1 }
+            ]
+          })
+        '
+        echo 'Waiting for replica set to be ready...'
+        until mongo --host mongo-primary:27017 --eval 'rs.status().ok' --quiet; do
+          sleep 5
+        done
+        echo 'Replica set configured successfully'
+      "
+    networks:
+      - flexi-network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    platform: linux/arm64
+    container_name: flexi-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Changed to avoid conflict with existing Redis
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - flexi-network
+
+  # SMTP Server (for email testing) - using smtp4dev which supports arm64
+  smtp4dev:
+    image: rnwood/smtp4dev:latest
+    container_name: flexi-smtp4dev
+    restart: unless-stopped
+    ports:
+      - "1026:25"    # SMTP port (changed to avoid conflict)
+      - "8025:80"    # Web UI port
+    networks:
+      - flexi-network
+
+  # Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flexi-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"   # HTTP
+      - "3443:3443"   # HTTPS
+    environment:
+      NODE_ENV: development  # Changed to development for dynamic frontend
+      MONGO_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwan?replicaSet=rs
+      MONGO_ANALYTICS_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwanAnalytics?replicaSet=rs
+      MONGO_BILLING_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexibilling?replicaSet=rs
+      MONGO_VPN_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexivpn?replicaSet=rs
+      REDIS_URL: redis://redis:6379
+      MAILER_HOST: smtp4dev
+      MAILER_PORT: 25
+      CAPTCHA_SECRET_KEY: ""
+      CAPTCHA_SITE_KEY: ""
+    volumes:
+      - ./backend/logs:/app/backend/logs
+      - ./frontend/src:/app/frontend/src:ro        # Mount frontend source for hot reloading
+      - ./frontend/public:/app/frontend/public:ro  # Mount frontend public assets
+    depends_on:
+      mongo-setup:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      smtp4dev:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - flexi-network
+
+volumes:
+  mongo_primary_data:
+  mongo_secondary1_data:
+  mongo_secondary2_data:
+  redis_data:
+
+networks:
+  flexi-network:
+    driver: bridge

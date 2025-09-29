@@ -245,10 +245,14 @@ class ExpressServer {
     if (configs.get('environment') === 'development') {
       logger.warn('Warning: Enabling UI database access');
       // mongo database UI
-      const mongoExpress = require('mongo-express/lib/middleware');
-      const mongoExpressConfig = require('./mongo_express_config');
-      const expressApp = await mongoExpress(mongoExpressConfig);
-      this.app.use('/admindb', expressApp);
+      try {
+        const mongoExpress = require('mongo-express/lib/middleware');
+        const mongoExpressConfig = require('./mongo_express_config');
+        const expressApp = await mongoExpress(mongoExpressConfig);
+        this.app.use('/admindb', expressApp);
+      } catch (err) {
+        logger.warn('mongo-express not available, skipping DB admin UI', { params: { error: err.message } });
+      }
     }
 
     // Enable routes for non-authorized links
@@ -258,6 +262,15 @@ class ExpressServer {
 
     this.app.get('/api/version', (req, res) => res.json({ version }));
     this.app.get('/api/restServers', (req, res) => res.json({ version }));
+    
+    // Health check endpoint for Docker
+    this.app.get('/api/health', (req, res) => {
+      res.status(200).json({ 
+        status: 'healthy', 
+        timestamp: new Date().toISOString(),
+        version: version 
+      });
+    });
 
     // Public runtime configuration endpoint (no auth) – exposes only safe, non-secret fields
     // Allows frontend (e.g. Login page) to fetch captchaSiteKey at runtime without rebuild.
