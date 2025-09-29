@@ -212,18 +212,8 @@ const updResp = (qtype, req, res, next, resp, origDoc = null) => {
         // d.set("tunnelStatus",
         //     d.isConnected ? (deviceStatus.getTunnelStatus(d.machineId) || null) : null,
         //     { strict: false });
-
-        // TBD: If no interfaces found try to read from device and update database
-        /*
-            if (d.interfaces.length == 0) {
-                console.log("No, interfaces. Try reading from device...");
-                console.log(JSON.stringify(
-                  updDeviceInterfaces(req.user.defaultOrg._id, d.machineId)));
-            } else {
-                console.log("Interfaces found...");
-                console.log(JSON.stringify(d.interfaces));
-            }
-            */
+    // TODO: If no interfaces found, optionally call
+    //       updDeviceInterfaces(...) to refresh from device (disabled)
       });
       resolve({ ok: 1 });
     } else if (qtype === 'PUT') {

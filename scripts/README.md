@@ -1,3 +1,53 @@
+# Maintenance & Helper Scripts
+
+This directory contains one-off or low-frequency operational scripts. They are intentionally
+decoupled from the backend runtime so they can be invoked without altering application code.
+
+## Location
+All maintenance scripts live under `scripts/maintenance/`.
+
+## Scripts
+
+### promote-user-admin.js
+Promote or demote a user to/from admin (super admin flag) directly in MongoDB.
+
+Usage:
+
+```bash
+node scripts/maintenance/promote-user-admin.js user@example.com        # promote
+node scripts/maintenance/promote-user-admin.js --demote user@example.com  # demote
+```
+
+Notes:
+- Resolves backend config & models dynamically.
+- Exits non‑zero on error or if user not found.
+
+### check-admin-status.js
+Check admin flag for one or more users.
+
+Usage:
+
+```bash
+node scripts/maintenance/check-admin-status.js alice@example.com bob@example.com
+```
+
+Outputs lines like:
+```
+alice@example.com: admin = YES
+bob@example.com: admin = NO
+```
+
+## Contributing New Scripts
+1. Place the script in `scripts/maintenance/`.
+2. Reuse backend modules via dynamic `require(path.join(backendRoot, ...))` instead of duplicating logic.
+3. Avoid committing secrets or embedding credentials; rely on existing config resolution.
+4. Prefer descriptive console output and non‑zero exit codes on failure.
+
+## Version Control Policy
+Runtime or generated artifacts (logs, build outputs) must not be added here. Only source scripts and documentation.
+
+## License
+Scripts inherit the repository license unless explicitly stated otherwise.
 # Development Helper Scripts
 
 This directory contains convenience shell scripts to quickly provision local development dependencies (MongoDB replica set, Redis, test SMTP server). **They are NOT production‑hardened**. Use them to bootstrap a dev/test workstation or disposable lab environment.
