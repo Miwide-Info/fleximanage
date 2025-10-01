@@ -1,3 +1,4 @@
+require('dotenv').config();
 // flexiWAN SD-WAN software - flexiEdge, flexiManage.
 // For more information go to https://flexiwan.com
 // Copyright (C) 2020  flexiWAN Ltd.

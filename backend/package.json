@@ -22,6 +22,7 @@
     "cors": "^2.8.5",
     "crypto-js": "^4.1.1",
     "debug": "~2.6.9",
+    "dotenv": "^17.2.3",
     "easyrsa": "^3.2.3",
     "express": "^4.18.1",
     "express-openapi-validator": "^5.0.4",

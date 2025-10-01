@@ -26,7 +26,7 @@ var mongo = {
   // to see more databases you need to set mongodb.admin to true or add
   // databases to the mongodb.auth list
   // eslint-disable-next-line max-len
-  connectionString: `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexiwan?replicaSet=rs`
+  connectionString: process.env.MONGO_URI || `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexiwan?replicaSet=rs`
   // connectionString: process.env.ME_CONFIG_MONGODB_SERVER
   // ? '' : process.env.ME_CONFIG_MONGODB_URL,
 };
