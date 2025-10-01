@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Token Test - Fresh Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Token Server Field Test</h1>
+    <p>This page tests if JWT decoding and server field extraction is working correctly.</p>
+    
+    <button onclick="loadTokens()">Load Fresh Token Data</button>
+    <button onclick="loadCachedTokens()">Load Cached Token Data</button>
+    
+    <div id="status"></div>
+    <table id="tokensTable" style="display:none;">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Server</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody id="tokensBody"></tbody>
+    </table>
+
+    <script>
+        async function loadTokens() {
+            const statusDiv = document.getElementById('status');
+            const table = document.getElementById('tokensTable');
+            const tbody = document.getElementById('tokensBody');
+            
+            statusDiv.innerHTML = '<p>Loading fresh token data...</p>';
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    statusDiv.innerHTML = '<p class="error">No auth token found. Please login first.</p>';
+                    return;
+                }
+                
+                const response = await fetch('/api/tokens/fresh?' + Date.now(), {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
+                const data = await response.json();
+                
+                tbody.innerHTML = '';
+                data.forEach(tokenData => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = tokenData.name;
+                    row.insertCell(1).textContent = tokenData.server;
+                    row.insertCell(2).textContent = new Date(tokenData.createdAt).toLocaleString();
+                });
+                
+                table.style.display = 'table';
+                statusDiv.innerHTML = '<p class="success">Fresh data loaded successfully! Check if Server column shows URLs.</p>';
+                
+            } catch (error) {
+                statusDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+        
+        async function loadCachedTokens() {
+            const statusDiv = document.getElementById('status');
+            const table = document.getElementById('tokensTable');
+            const tbody = document.getElementById('tokensBody');
+            
+            statusDiv.innerHTML = '<p>Loading cached token data...</p>';
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    statusDiv.innerHTML = '<p class="error">No auth token found. Please login first.</p>';
+                    return;
+                }
+                
+                const response = await fetch('/api/tokens', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
+                const data = await response.json();
+                
+                tbody.innerHTML = '';
+                data.forEach(tokenData => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = tokenData.name;
+                    row.insertCell(1).textContent = tokenData.server || '-';
+                    row.insertCell(2).textContent = new Date(tokenData.createdAt).toLocaleString();
+                });
+                
+                table.style.display = 'table';
+                statusDiv.innerHTML = '<p class="success">Cached data loaded. Compare with fresh data above.</p>';
+                
+            } catch (error) {
+                statusDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -93,6 +93,8 @@ const configEnv = {
     jobRetainTimeout: 604800000,
     // Key used for device tokens, override default with environment variable DEVICE_SECRET_KEY
     deviceTokenSecretKey: 'abcdefg1234567',
+    // Allowed servers for token creation (fallback for all environments)
+    tokenAllowedServers: 'https://local.miwide.com:3443,http://local.miwide.com:3000,https://manage.miwide.com:443,https://manage.miwide.com:4443,https://manage.miwide.com,local.miwide.com:3443,manage.miwide.com:443,manage.miwide.com',
   // Key used to validate google captcha token (server secret). Can be supplied via env CAPTCHA_SECRET_KEY.
   // Empty string means backend will NOT verify with Google (dev convenience) and will trust client side.
   captchaKey: process.env.CAPTCHA_SECRET_KEY || '',
@@ -306,12 +308,8 @@ const configEnv = {
     // Updated to serve the new React UI (OpenSource-OpenNetworking) located at /frontend
     clientStaticDir: '../frontend/build',
     // Allowed servers for token creation (override restServerUrl list for token validation only)
-    // Include local dev, public manage endpoint, and custom manage.miwide.com domain.
-    tokenAllowedServers: [
-      'https://local.flexiwan.com:3443',
-      'https://manage.flexiwan.com:443',
-      'https://manage.miwide.com:443'
-    ],
+    // Include local dev and custom manage.miwide.com domain.
+    tokenAllowedServers: 'https://local.miwide.com:3443,http://local.miwide.com:3000,https://manage.miwide.com:443,https://manage.miwide.com:4443,https://manage.miwide.com,local.miwide.com:3443,manage.miwide.com:443,manage.miwide.com',
     mailerBypassCert: true,
     SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest-testing',
     userTokenExpiration: 604800,

@@ -11,6 +11,9 @@ import AccountNotificationsSettings from './pages/account/NotificationsSettings'
 import AccountBilling from './pages/account/Billing';
 import AccountAccessKeys from './pages/account/AccessKeys';
 import AccountMembers from './pages/account/Members';
+import Organizations from './pages/Organizations';
+import AddOrganization from './pages/AddOrganization';
+import EditOrganization from './pages/EditOrganization';
 import Devices from './pages/Devices';
 import Network from './pages/Network';
 import Tunnels from './pages/Tunnels';
@@ -100,6 +103,9 @@ function App() {
           <Route path="/users" element={<Guard permKey="members" element={<AccountMembers />} />} />
           <Route path="/account/members" element={<Navigate to="/users" replace />} />
           <Route path="/account/access-keys" element={<Guard permKey="accesstokens" element={<AccountAccessKeys />} />} />
+          <Route path="/organizations" element={<Guard permKey="organizations" element={<Organizations />} />} />
+          <Route path="/organizations/add" element={<Guard permKey="organizations" element={<AddOrganization />} />} />
+          <Route path="/organizations/edit/:id" element={<Guard permKey="organizations" element={<EditOrganization />} />} />
           <Route path="/devices" element={<Guard permKey="devices" element={<Devices />} />} />
           <Route path="/network" element={<Guard permKey="organizations" element={<Network />} />} />
           <Route path="/tunnels" element={<Guard permKey="tunnels" element={<Tunnels />} />} />

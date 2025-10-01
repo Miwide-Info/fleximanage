@@ -121,6 +121,13 @@ class ExpressServer {
     //   next();
     // });
 
+    // Performance optimizations - add compression and caching
+    const compressionMiddleware = require('./middleware/compression');
+    const { createCacheMiddleware } = require('./middleware/cache');
+    
+    // Enable gzip compression for all responses
+    this.app.use(compressionMiddleware);
+
     // Request logging middleware - must be defined before routers.
     this.app.use(reqLogger);
     this.app.set('trust proxy', true); // Needed to get the public IP if behind a proxy
@@ -292,19 +299,29 @@ class ExpressServer {
       }
     });
 
-    // Public meta data (static enums / roles) for frontend dynamic rendering
-    this.app.get('/api/public/meta', (req, res) => {
+    // Public meta data (static enums / roles) for frontend dynamic rendering - with caching
+    this.app.get('/api/public/meta', createCacheMiddleware({ customTTL: 'long' }), (req, res) => {
       try {
         const { SERVICE_TYPES } = require('./constants/serviceTypes');
         const { preDefinedPermissions } = require('./models/membership');
         // Only expose the keys of preDefinedPermissions (not the raw bitmasks per resource)
         const permissionPresets = Object.keys(preDefinedPermissions);
+        
+        // Add cache headers for this static data
+        res.set({
+          'Cache-Control': 'public, max-age=3600', // 1 hour
+          'ETag': `"meta-${Date.now()}"`
+        });
+        
         res.json({ serviceTypes: SERVICE_TYPES, permissionPresets });
       } catch (e) {
         logger.error('Failed to serve public meta', { params: { message: e.message }, req });
         res.status(500).json({ error: 'Public meta unavailable' });
       }
     });
+
+    // Add performance monitoring routes before authentication (public access)
+    this.app.use('/api/performance', require('./routes/performance'));
 
     this.app.use(cors.corsWithOptions);
     this.app.use(auth.verifyUserJWT);
@@ -320,7 +337,7 @@ class ExpressServer {
       logger.error('Error: Can\'t connect OLD routes');
     }
 
-    // Intialize routes
+    // Initialize authenticated routes
     this.app.use('/api/admin', adminRouter);
     this.app.use('/api/tickets', ticketsRouter);
 

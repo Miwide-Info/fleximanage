@@ -186,8 +186,16 @@ class OrganizationsService {
         // this is required to make sure the API permissions
         // are set properly for updating this organization
         const orgList = await getAccessTokenOrgList(user, undefined, false);
-        if (!orgList.includes(id)) {
-          throw new Error('Please select an organization to delete it');
+        // Convert both sides to strings for comparison
+        const orgListStrings = orgList.map(orgId => orgId.toString());
+        
+        // Check if user has access to this organization through account membership
+        const userAccount = await Accounts.findById(user.defaultAccount).populate('organizations');
+        const accountOrgIds = userAccount.organizations.map(org => org._id.toString());
+        
+        // Allow deletion if user is admin or organization belongs to user's account
+        if (!user.admin && !accountOrgIds.includes(id.toString())) {
+          throw new Error('You do not have permission to delete this organization');
         }
 
         const account = await Accounts.findOneAndUpdate(

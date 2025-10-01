@@ -28,7 +28,7 @@ export default function AccountProfile () {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [acct, setAcct] = useState(null);
-  const [form, setForm] = useState({ name: '', country: '', companyType: '', companyDesc: '', forceMfa: false });
+  const [form, setForm] = useState({ name: '', country: '', forceMfa: false });
   const [fieldErrors, setFieldErrors] = useState({ country: '' });
   const countries = sortCountries();
 
@@ -63,8 +63,6 @@ export default function AccountProfile () {
     setForm({
       name: acct.name || '',
       country: (acct.country || '').toUpperCase(),
-      companyType: acct.companyType || '',
-      companyDesc: acct.companyDesc || '',
       forceMfa: !!acct.forceMfa
     });
     setFieldErrors({ country: '' });
@@ -93,8 +91,6 @@ export default function AccountProfile () {
       const body = {
         name: form.name.trim(),
         country: form.country.toUpperCase(),
-        companyType: form.companyType || '',
-        companyDesc: form.companyDesc || '',
         forceMfa: !!form.forceMfa
       };
       const resp = await api.put(`/accounts/${accountId}`, body);
@@ -122,39 +118,25 @@ export default function AccountProfile () {
       {!loading && !acct && !error && <p>No account data available.</p>}
       {acct && !loading && (
         <div className="card mb-3">
-          <div className="card-body p-3">
-            <div className="row g-3 small">
-              <div className="col-sm-6 col-lg-4">
-                <div className="text-muted">Name</div>
-                <div>{acct.name || '-'}</div>
+          <div className="card-body p-4">
+            <div className="row g-4">
+              <div className="col-md-6">
+                <div className="form-group">
+                  <label className="form-label"><strong>Company Name :</strong></label>
+                  <div className="form-control-plaintext">{acct.name || '-'}</div>
+                </div>
               </div>
-              <div className="col-sm-6 col-lg-2">
-                <div className="text-muted">Country</div>
-                <div>{acct.country || '-'}</div>
+              <div className="col-md-6">
+                <div className="form-group">
+                  <label className="form-label"><strong>Country :</strong></label>
+                  <div className="form-control-plaintext">{acct.country || '-'}</div>
+                </div>
               </div>
-              <div className="col-sm-6 col-lg-3">
-                <div className="text-muted">Company Type</div>
-                <div>{acct.companyType || '-'}</div>
-              </div>
-              <div className="col-sm-6 col-lg-3">
-                <div className="text-muted">Forces MFA</div>
-                <div>{acct.forceMfa ? 'Yes' : 'No'}</div>
-              </div>
-              <div className="col-12">
-                <div className="text-muted">Company Description</div>
-                <div style={{ whiteSpace: 'pre-wrap' }}>{acct.companyDesc || '-'}</div>
-              </div>
-              <div className="col-sm-6 col-lg-3">
-                <div className="text-muted">Subscription Valid</div>
-                <div>{acct.isSubscriptionValid ? 'Yes' : 'No'}</div>
-              </div>
-              <div className="col-sm-6 col-lg-3">
-                <div className="text-muted">Trial End (epoch)</div>
-                <div>{acct.trial_end != null ? acct.trial_end : '-'}</div>
-              </div>
-              <div className="col-sm-6 col-lg-6">
-                <div className="text-muted">Account ID</div>
-                <div className="font-monospace small">{acct._id}</div>
+              <div className="col-md-6">
+                <div className="form-group">
+                  <label className="form-label"><strong>Force Two-Factor-authenticator :</strong></label>
+                  <div className="form-control-plaintext">{acct.forceMfa ? 'Yes' : 'No'}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -176,34 +158,26 @@ export default function AccountProfile () {
                   </div>
                   <div className="modal-body">
                     <div className="row g-3">
-                      <div className="col-sm-6">
-                        <label className="form-label">Name</label>
-                        <input className="form-control form-control-sm" maxLength={64} name="name" value={form.name} onChange={handleChange} required />
+                      <div className="col-md-6">
+                        <label className="form-label">Company Name</label>
+                        <input className="form-control" maxLength={64} name="name" value={form.name} onChange={handleChange} required />
                       </div>
-                      <div className="col-sm-3">
+                      <div className="col-md-6">
                         <label className="form-label">Country</label>
-                        <select className={`form-select form-select-sm ${fieldErrors.country ? 'is-invalid' : ''}`} name="country" value={form.country} onChange={handleChange} required>
-                          <option value="">-- Country --</option>
+                        <select className={`form-select ${fieldErrors.country ? 'is-invalid' : ''}`} name="country" value={form.country} onChange={handleChange} required>
+                          <option value="">-- Select Country --</option>
                           {countries.map(c => <option key={c.code} value={c.code}>{c.code} - {c.name}</option>)}
                         </select>
                         {fieldErrors.country && <div className="invalid-feedback">{fieldErrors.country}</div>}
                       </div>
-                      <div className="col-sm-3 d-flex align-items-center pt-4">
-                        <div className="form-check mt-2">
+                      <div className="col-md-6">
+                        <div className="form-check mt-3">
                           <input className="form-check-input" type="checkbox" id="forceMfa" name="forceMfa" checked={form.forceMfa} onChange={handleChange} />
-                          <label className="form-check-label" htmlFor="forceMfa">Force MFA</label>
+                          <label className="form-check-label" htmlFor="forceMfa">Force Two-Factor-authenticator</label>
                         </div>
                       </div>
-                      <div className="col-sm-6">
-                        <label className="form-label">Company Type</label>
-                        <input className="form-control form-control-sm" name="companyType" value={form.companyType} onChange={handleChange} />
-                      </div>
-                      <div className="col-sm-6">
-                        <label className="form-label">Company Description</label>
-                        <textarea className="form-control form-control-sm" rows={3} name="companyDesc" value={form.companyDesc} onChange={handleChange} />
-                      </div>
                     </div>
-                    <p className="small text-muted mt-3 mb-0">Enabling Force MFA requires all users to configure MFA before accessing this account.</p>
+                    <p className="small text-muted mt-3 mb-0">Enabling Force Two-Factor-authenticator requires all users to configure MFA before accessing this account.</p>
                   </div>
                   <div className="modal-footer py-2">
                     <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</button>

@@ -221,6 +221,14 @@ exports.verifyUserJWT = function (req, res, next) {
     return next();
     // Check if an API call
   } else if ((req.originalUrl && req.originalUrl.startsWith('/api')) || req.url.includes('/mfa')) {
+    // Skip authentication for public performance monitoring endpoints
+    if (req.originalUrl && (req.originalUrl.startsWith('/api/performance') || 
+                           req.originalUrl.startsWith('/api/public') || 
+                           req.originalUrl.startsWith('/api/health'))) {
+      logger.debug('verifyUserJWT: skipping auth for public endpoint', { params: { url: req.originalUrl } });
+      return next();
+    }
+    
     // 调试：打印用于判定路径的 url / originalUrl
     logger.debug('verifyUserJWT path check', { params: { url: req.url, originalUrl: req.originalUrl } });
     passport.authenticate('jwt', { session: false }, async (err, user, info) => {

@@ -36,7 +36,7 @@ const Tokens = () => {
   const loadTokens = async () => {
     setLoading(true); setError(null);
     try {
-      const resp = await api.get('/tokens');
+      const resp = await api.get(`/tokens?_t=${Date.now()}`);
       const list = Array.isArray(resp.data) ? resp.data : [];
       const mapped = list.map(r => ({
         id: r._id || r.id,
@@ -131,15 +131,27 @@ const Tokens = () => {
       {formOpen && (
         <form className="border rounded p-3 mb-4 bg-light" onSubmit={handleCreate}>
           <h6 className="fw-bold mb-3">Create Token</h6>
-          <div className="row g-3 align-items-end">
-            <div className="col-12 col-md-4">
+          <div className="row g-3">
+            <div className="col-12 col-lg-3">
               <label className="form-label mb-1">Name</label>
-              <input className="form-control form-control-sm" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. device-onboarding" disabled={creating} required />
+              <input 
+                className="form-control form-control-sm" 
+                value={name} 
+                onChange={e => setName(e.target.value)} 
+                placeholder="e.g. device-onboarding" 
+                disabled={creating} 
+                required 
+              />
             </div>
-            <div className="col-12 col-md-4">
+            <div className="col-12 col-lg-6">
               <label className="form-label mb-1">Server (optional)</label>
               <div className="input-group input-group-sm">
-                <select className="form-select" value={server} onChange={e => setServer(e.target.value)} disabled={creating}>
+                <select 
+                  className="form-select" 
+                  value={server} 
+                  onChange={e => setServer(e.target.value)} 
+                  disabled={creating}
+                >
                   <option value="">(default)</option>
                   {serverOptions.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -154,11 +166,22 @@ const Tokens = () => {
               </div>
               <div className="form-text">Leave blank to use default backend server.</div>
             </div>
-            <div className="col-12 col-md-2 d-grid">
-              <button className="btn btn-primary btn-sm" type="submit" disabled={creating}>{creating ? 'Creating…' : 'Create'}</button>
+            <div className="col-12 col-lg-3">
+              <label className="form-label mb-1">&nbsp;</label>
+              <button 
+                className="btn btn-primary btn-sm w-100" 
+                type="submit" 
+                disabled={creating}
+              >
+                {creating ? 'Creating…' : 'Create'}
+              </button>
             </div>
           </div>
-          <p className="small text-muted mt-2 mb-0">Token will be shown only once after creation. Store it securely.</p>
+          <div className="row mt-2">
+            <div className="col-12">
+              <p className="small text-muted mb-0">Token will be shown only once after creation. Store it securely.</p>
+            </div>
+          </div>
           {error && <div className="alert alert-danger py-2 px-2 mt-3 mb-0">{error}</div>}
           {newTokenValue && (
             <div className="alert alert-warning py-2 px-2 mt-3 mb-0">

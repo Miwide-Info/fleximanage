@@ -1,5 +1,5 @@
 services:
-  # MongoDB Replica Set (3 nodes)
+  # MongoDB Replica Set (3 nodes) - Optimized
   mongo-primary:
     image: mongo:4.4
     platform: linux/arm64
@@ -8,10 +8,14 @@ services:
     ports:
       - "27017:27017"
     command: |
-      mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256
+      mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256 
+             --wiredTigerCacheSizeGB 0.5 --wiredTigerCollectionBlockCompressor snappy
     volumes:
       - mongo_primary_data:/data/db
       - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
       interval: 10s
@@ -20,6 +24,15 @@ services:
       start_period: 40s
     networks:
       - flexi-network
+    # Resource limits for optimal performance
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
 
   mongo-secondary1:
     image: mongo:4.4
@@ -30,6 +43,7 @@ services:
       - "27018:27017"
     command: |
       mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256
+             --wiredTigerCacheSizeGB 0.25 --wiredTigerCollectionBlockCompressor snappy
     volumes:
       - mongo_secondary1_data:/data/db
     depends_on:
@@ -42,6 +56,14 @@ services:
       start_period: 40s
     networks:
       - flexi-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
 
   mongo-secondary2:
     image: mongo:4.4
@@ -52,6 +74,7 @@ services:
       - "27019:27017"
     command: |
       mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256
+             --wiredTigerCacheSizeGB 0.25 --wiredTigerCollectionBlockCompressor snappy
     volumes:
       - mongo_secondary2_data:/data/db
     depends_on:
@@ -64,6 +87,14 @@ services:
       start_period: 40s
     networks:
       - flexi-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
 
   # MongoDB Replica Set Initialization
   mongo-setup:
@@ -101,16 +132,20 @@ services:
     networks:
       - flexi-network
 
-  # Redis
+  # Redis - Optimized
   redis:
     image: redis:7-alpine
     platform: linux/arm64
     container_name: flexi-redis
     restart: unless-stopped
     ports:
-      - "6380:6379"  # Changed to avoid conflict with existing Redis
+      - "6380:6379"
     volumes:
       - redis_data:/data
+    command: |
+      redis-server --save 900 1 --save 300 10 --save 60 10000 
+                   --maxmemory 256mb --maxmemory-policy allkeys-lru
+                   --tcp-keepalive 300 --timeout 0
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -119,66 +154,115 @@ services:
       start_period: 30s
     networks:
       - flexi-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
 
-  # SMTP Server (for email testing) - using smtp4dev which supports arm64
+  # SMTP Server (for email testing)
   smtp4dev:
     image: rnwood/smtp4dev:latest
     container_name: flexi-smtp4dev
     restart: unless-stopped
     ports:
-      - "1026:25"    # SMTP port (changed to avoid conflict)
-      - "8025:80"    # Web UI port
+      - "1026:25"
+      - "8025:80"
     networks:
       - flexi-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
 
-  # Backend
+  # Backend - Optimized
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.optimized
+      args:
+        NODE_ENV: production
     container_name: flexi-backend
     restart: unless-stopped
     ports:
-      - "3000:3000"   # HTTP
-      - "3443:3443"   # HTTPS
+      - "3000:3000"
+      - "3443:3443"
     environment:
-      NODE_ENV: development  # Changed to development for dynamic frontend
-      MONGO_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwan?replicaSet=rs
-      MONGO_ANALYTICS_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwanAnalytics?replicaSet=rs
-      MONGO_BILLING_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexibilling?replicaSet=rs
-      MONGO_VPN_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexivpn?replicaSet=rs
+      NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=1024"
+      UV_THREADPOOL_SIZE: 4
+      MONGO_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwan?replicaSet=rs&readPreference=secondaryPreferred
+      MONGO_ANALYTICS_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwanAnalytics?replicaSet=rs&readPreference=secondaryPreferred
+      MONGO_BILLING_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexibilling?replicaSet=rs&readPreference=secondaryPreferred
+      MONGO_VPN_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexivpn?replicaSet=rs&readPreference=secondaryPreferred
       REDIS_URL: redis://redis:6379
-      MAILER_HOST: smtp4dev
-      MAILER_PORT: 25
-      CAPTCHA_SECRET_KEY: ""
-      CAPTCHA_SITE_KEY: ""
-    volumes:
-      - ./backend/logs:/app/backend/logs
-      - ./backend/bin/cert.local.miwide.com:/app/backend/bin/cert.local.miwide.com:ro  # SSL certificates
-      - ./frontend/src:/app/frontend/src:ro        # Mount frontend source for hot reloading
-      - ./frontend/public:/app/frontend/public:ro  # Mount frontend public assets
+      SMTP_HOST: smtp4dev
+      SMTP_PORT: 25
     depends_on:
-      mongo-setup:
-        condition: service_completed_successfully
+      mongo-primary:
+        condition: service_healthy
       redis:
         condition: service_healthy
-      smtp4dev:
-        condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf --max-time 5 http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf --max-time 5 http://localhost:3000/api/performance/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     networks:
       - flexi-network
+    volumes:
+      - ./backend/bin/cert.local.miwide.com:/app/bin/cert.local.miwide.com:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Frontend - Optimized (Optional: if serving separately)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.optimized
+    container_name: flexi-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - flexi-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
 
 volumes:
   mongo_primary_data:
+    driver: local
   mongo_secondary1_data:
+    driver: local
   mongo_secondary2_data:
+    driver: local
   redis_data:
+    driver: local
 
 networks:
   flexi-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: flexi-br0
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

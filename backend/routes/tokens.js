@@ -61,9 +61,88 @@ const checkUpdReq = (qtype, req) => new Promise(function (resolve, reject) {
   resolve({ ok: 1 });
 });
 
+// Add a cache-busting endpoint to force fresh data
+tokensRouter.get('/fresh', async (req, res) => {
+  try {
+    // Add aggressive no-cache headers
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate, private',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'ETag': `"fresh-${Date.now()}"`,
+      'Last-Modified': new Date().toUTCString(),
+      'Vary': '*'
+    });
+
+    // Get tokens with JWT decoding
+    const tokensData = await tokens.find({ org: req.user.defaultOrg._id });
+    
+    const tokensWithServer = tokensData.map(item => {
+      let server = '-';
+      try {
+        const decoded = jwt.decode(item.token);
+        server = decoded?.server || '-';
+      } catch (err) {
+        server = '-';
+      }
+      
+      return {
+        _id: item._id,
+        org: item.org.toString(),
+        name: item.name,
+        token: item.token,
+        server: server,
+        createdAt: item.createdAt.toISOString(),
+        _fresh: Date.now()
+      };
+    });
+
+    res.json(tokensWithServer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Custom response processor to add server field from JWT
+const processTokensResponse = (qtype, req, res, next, resp) => {
+  console.log('🔥 CUSTOM PROCESSOR CALLED! qtype:', qtype, 'resp type:', typeof resp);
+  return new Promise((resolve, reject) => {
+    try {
+      console.log(`DEBUG WRAPPER: Processing ${qtype} request, response type:`, typeof resp, 'length:', Array.isArray(resp) ? resp.length : 'not array');
+      
+      if (qtype === 'GET' && Array.isArray(resp)) {
+        console.log(`DEBUG WRAPPER: Processing ${resp.length} tokens`);
+        // Add server field by decoding JWT tokens
+        resp.forEach((token, index) => {
+          if (token.token) {
+            try {
+              const decoded = jwt.decode(token.token);
+              const serverValue = decoded?.server || '-';
+              token.server = serverValue;
+              console.log(`DEBUG WRAPPER: Token ${index + 1} (${token.name}): server = ${serverValue}`);
+            } catch (err) {
+              token.server = '-';
+              console.log(`DEBUG WRAPPER: Token ${index + 1} (${token.name}): JWT decode error:`, err.message);
+            }
+          } else {
+            console.log(`DEBUG WRAPPER: Token ${index + 1} (${token.name}): No token field`);
+          }
+        });
+        console.log('DEBUG WRAPPER: Final response sample:', JSON.stringify(resp[0], null, 2));
+      }
+      resolve(resp);
+    } catch (error) {
+      console.log('DEBUG WRAPPER: Error in processTokensResponse:', error.message);
+      reject(error);
+    }
+  });
+};
+
+console.log('🚀 TOKENS ROUTE LOADED WITH CUSTOM PROCESSOR');
+
 // wrapper
-wrapper.assignRoutes(tokensRouter, 'tokens', '/', tokens, formatErr, checkUpdReq);
-wrapper.assignRoutes(tokensRouter, 'tokens', '/:tokenId', tokens, formatErr, checkUpdReq);
+wrapper.assignRoutes(tokensRouter, 'tokens', '/', tokens, formatErr, checkUpdReq, processTokensResponse);
+wrapper.assignRoutes(tokensRouter, 'tokens', '/:tokenId', tokens, formatErr, checkUpdReq, processTokensResponse);
 
 // Default exports
 module.exports = tokensRouter;

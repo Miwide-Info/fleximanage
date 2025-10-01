@@ -14,3 +14,25 @@
 .action-buttons .btn {
   padding: 0.25rem 0.5rem;
 }
+
+.device-card {
+  background-color: #f8f9fa;
+  transition: box-shadow 0.2s ease;
+}
+
+.device-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.device-stats div,
+.device-details div {
+  margin-bottom: 0.5rem;
+}
+
+.device-stats {
+  margin-top: 1rem;
+}
+
+.device-details {
+  margin-top: 1rem;
+}

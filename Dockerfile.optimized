@@ -1,0 +1,56 @@
+# Multi-stage optimized backend Dockerfile
+FROM node:18-alpine AS dependencies
+
+# Install only production dependencies for smaller image
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production --no-audit --no-fund && npm cache clean --force
+
+# Build stage
+FROM node:18-alpine AS build
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY . .
+# Remove unnecessary files to reduce image size
+RUN rm -rf tests/ docs/ .git/ .gitignore README.md
+
+# Production stage
+FROM node:18-alpine AS production
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodeuser -u 1001
+
+# Set production environment
+ENV NODE_ENV=production
+ENV NPM_CONFIG_LOGLEVEL=warn
+
+WORKDIR /app
+
+# Copy production dependencies from dependencies stage
+COPY --from=dependencies --chown=nodeuser:nodejs /app/node_modules ./node_modules
+
+# Copy application code from build stage
+COPY --from=build --chown=nodeuser:nodejs /app .
+
+# Remove package files not needed at runtime
+RUN rm -f package*.json
+
+# Set proper permissions
+RUN chown -R nodeuser:nodejs /app
+
+# Switch to non-root user
+USER nodeuser
+
+# Expose ports
+EXPOSE 3000 3443
+
+# Add health check with optimized curl command
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -sf --max-time 5 http://localhost:3000/api/health || exit 1
+
+# Use exec form for better signal handling
+CMD ["node", "./bin/www"]

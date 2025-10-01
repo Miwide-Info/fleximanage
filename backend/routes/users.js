@@ -974,5 +974,47 @@ router.route('/list')
     }
   });
 
+// Set user's default organization
+router.route('/org/:orgId')
+  .options(cors.corsWithOptions, (req, res) => { res.sendStatus(200); })
+  .put(cors.corsWithOptions, auth.verifyUserJWT, async (req, res, next) => {
+    try {
+      const { orgId } = req.params;
+      const userId = req.user.id;
+
+      // Validate that the organization exists and user has access to it
+      const orgs = await getUserOrganizations(req.user);
+      if (!orgs[orgId]) {
+        return next(createError(403, 'User does not have access to this organization'));
+      }
+
+      // Update user's default organization
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { defaultOrg: orgId },
+        { new: true }
+      ).populate('defaultOrg');
+
+      if (!updatedUser) {
+        return next(createError(404, 'User not found'));
+      }
+
+      logger.info('User default organization updated', {
+        params: { userId, orgId, orgName: updatedUser.defaultOrg?.name }
+      });
+
+      res.status(200).json({
+        message: 'Default organization updated successfully',
+        defaultOrg: updatedUser.defaultOrg
+      });
+
+    } catch (err) {
+      logger.error('Set default organization failed', { 
+        params: { reason: err.message, userId: req.user?.id, orgId: req.params.orgId }
+      });
+      return next(createError(500, 'Failed to set default organization'));
+    }
+  });
+
 // Default exports
 module.exports = router;

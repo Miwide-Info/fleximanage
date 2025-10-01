@@ -13,11 +13,21 @@ import {
   FaChevronDown,
   FaUsers
 } from 'react-icons/fa';
+import { decodeJwtPayload, extractPerms, hasViewPermission } from '../auth/permissions';
 import './Sidebar.css';
 
 const Sidebar = ({ collapsed }) => {
   // Default: Account group collapsed
   const [openSections, setOpenSections] = useState({ account: false, inventory: false });
+
+  // Get current user permissions
+  const token = localStorage.getItem('token');
+  const perms = token ? extractPerms(decodeJwtPayload(token)) : {};
+  
+  // Debug logging
+  console.log('Sidebar rendering - Token exists:', !!token);
+  console.log('Sidebar rendering - Permissions:', perms);
+  console.log('Sidebar rendering - Has accesstokens permission:', hasViewPermission(perms, 'accesstokens'));
 
   const toggleSection = (key) => {
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -32,7 +42,7 @@ const Sidebar = ({ collapsed }) => {
       label: 'Account',
       children: [
         { path: '/account/profile', label: 'Profile' },
-        { path: '/account/organizations', label: 'Organizations' },
+        { path: '/organizations', label: 'Organizations' },
         { path: '/account/notifications', label: 'Notifications Settings' },
         { path: '/account/billing', label: 'Billing' },
         { path: '/account/access-keys', label: 'Access Keys' },
@@ -45,16 +55,16 @@ const Sidebar = ({ collapsed }) => {
       icon: <FaServer />, // reuse server icon; could swap for a different one later
       label: 'Inventory',
       children: [
+        { path: '/devices', label: 'Devices' },
         { path: '/tokens', label: 'Tokens' }
       ]
     },
-    { type: 'item', path: '/devices', icon: <FaServer />, label: 'Devices' },
-    { path: '/network', icon: <FaNetworkWired />, label: 'Network' },
-    { path: '/tunnels', icon: <FaRoute />, label: 'Tunnels' },
-    { path: '/firewall', icon: <FaShieldAlt />, label: 'Firewall' },
-    { path: '/qos', icon: <FaTachometerAlt />, label: 'QoS' },
-    { path: '/monitoring', icon: <FaTachometerAlt />, label: 'Monitoring' },
-    { path: '/settings', icon: <FaCog />, label: 'Settings' },
+    { type: 'item', path: '/network', icon: <FaNetworkWired />, label: 'Network' },
+    { type: 'item', path: '/tunnels', icon: <FaRoute />, label: 'Tunnels' },
+    { type: 'item', path: '/firewall', icon: <FaShieldAlt />, label: 'Firewall' },
+    { type: 'item', path: '/qos', icon: <FaTachometerAlt />, label: 'QoS' },
+    { type: 'item', path: '/monitoring', icon: <FaTachometerAlt />, label: 'Monitoring' },
+    { type: 'item', path: '/settings', icon: <FaCog />, label: 'Settings' },
   ];
 
   return (

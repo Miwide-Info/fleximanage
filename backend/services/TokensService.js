@@ -21,6 +21,7 @@ const jwt = require('jsonwebtoken');
 const configs = require('../configs.js')();
 const Tokens = require('../models/tokens');
 const { getAccessTokenOrgList } = require('../utils/membershipUtils');
+const Logger = require('../logging/logging')({ module: module.filename, type: 'req' });
 
 class TokensService {
   /**
@@ -31,22 +32,43 @@ class TokensService {
    * returns List
    **/
   static async tokensGET ({ org, offset, limit }, { user }) {
+    console.log('🎯 TOKENS SERVICE GET CALLED! User:', user?.email || 'unknown');
+    console.log('DEBUG: tokensGET called');
     try {
       const orgList = await getAccessTokenOrgList(user, org, false);
       const result = await Tokens.find({ org: { $in: orgList } });
-
+      console.log(`DEBUG: Found ${result.length} tokens in database`);
+      
       const tokens = result.map(item => {
-        return {
+        console.log(`DEBUG: Processing token ${item.name}`);
+        // Decode JWT token to extract server information
+        let server = null;
+        try {
+          const decoded = jwt.decode(item.token);
+          console.log(`DEBUG: Decoded JWT for ${item.name}:`, decoded?.server);
+          server = decoded?.server || 'Unknown Server';
+        } catch (err) {
+          console.log(`DEBUG: JWT decode error for ${item.name}:`, err.message);
+          server = 'Decode Error';
+        }
+        
+        const result = {
           _id: item.id,
           org: item.org.toString(),
           name: item.name,
           token: item.token,
-          createdAt: item.createdAt.toISOString()
+          server: server,
+          createdAt: item.createdAt.toISOString(),
+          _timestamp: Date.now() // Force cache invalidation
         };
+        console.log(`DEBUG: Final token for ${item.name}, server: ${result.server}`);
+        return result;
       });
 
+      console.log('DEBUG: Returning tokens with server fields');
       return Service.successResponse(tokens);
     } catch (e) {
+      console.log('DEBUG: Error in tokensGET:', e.message);
       return Service.rejectResponse(
         e.message || 'Internal Server Error',
         e.status || 500
@@ -163,8 +185,11 @@ class TokensService {
     try {
       const orgList = await getAccessTokenOrgList(user, org, true);
 
-      const servers = configs.get('tokenAllowedServers', 'list') ||
-        configs.get('restServerUrl', 'list');
+      // Try to get tokenAllowedServers first
+      const tokenServers = configs.get('tokenAllowedServers', 'list');
+      const restServers = configs.get('restServerUrl', 'list');
+      const servers = tokenServers || restServers;
+      
       // Verify request schema
       const { valid, message } = await TokensService.verifyRequestSchema(
         tokenRequest, orgList[0], servers
@@ -226,6 +251,7 @@ class TokensService {
   static async verifyRequestSchema (tokenRequest, org, allowedServers) {
     const { _id, name } = tokenRequest;
     let { server } = tokenRequest;
+    
     if (server && typeof server === 'string') {
       // Normalize: trim & ensure protocol present (default https)
       server = server.trim();
@@ -249,9 +275,10 @@ class TokensService {
     };
     // If server specified by user, check if it exists in the configs list
     if (server && !allowedServers.includes(server)) {
+      const errorMsg = `Token error: Server is not allowed. Server: "${server}", Allowed: ${JSON.stringify(allowedServers)}`;
       return {
         valid: false,
-        message: 'Token error: Server is not allowed'
+        message: errorMsg
       };
     }
     return { valid: true, message: '' };

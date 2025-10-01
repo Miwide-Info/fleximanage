@@ -14,7 +14,7 @@ async function createDefaultAdmin () {
     console.log('Connected to MongoDB');
 
     // Check if admin user already exists
-    const existingUser = await User.findOne({ email: 'admin@miwide.com' });
+    const existingUser = await User.findOne({ email: 'admin@flexiwan.com' });
     if (existingUser) {
       let changed = false;
       if (!existingUser.admin) { existingUser.admin = true; changed = true; }
@@ -65,8 +65,8 @@ async function createDefaultAdmin () {
 
     // Create admin user
     const user = new User({
-      email: 'admin@miwide.com',
-      username: 'admin@miwide.com',
+      email: 'admin@flexiwan.com',
+      username: 'admin@flexiwan.com',
       name: 'Admin',
       lastName: 'User',
       jobTitle: 'Administrator',
@@ -79,7 +79,7 @@ async function createDefaultAdmin () {
 
     // Register user with password using passport-local-mongoose
     await User.register(user, 'admin');
-    console.log('Created admin user: admin@miwide.com / admin');
+    console.log('Created admin user: admin@flexiwan.com / admin');
     // Create owner membership for admin
     try {
       await membership.create({

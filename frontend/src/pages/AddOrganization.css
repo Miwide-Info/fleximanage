@@ -1,0 +1,15 @@
+.add-organization-page {
+  padding: 20px;
+}
+
+.page-header {
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+}
