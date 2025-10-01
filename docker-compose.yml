@@ -11,7 +11,6 @@ services:
       mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256
     volumes:
       - mongo_primary_data:/data/db
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
       interval: 10s
