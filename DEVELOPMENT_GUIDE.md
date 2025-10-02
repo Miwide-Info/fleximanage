@@ -1,197 +1,197 @@
-# FlexiManage 开发文档
+# FlexiManage Development Guide
 
-## 项目概述
+## Project Overview
 
-FlexiManage 是一个开源的 SD-WAN 管理平台，提供设备管理、网络配置、用户认证等核心功能。本文档为开发者提供完整的开发指南。
+FlexiManage is an open-source SD-WAN management platform that provides device management, network configuration, user authentication, and other core functionalities. This document provides developers with a complete development guide.
 
-## 技术栈
+## Technology Stack
 
-### 后端技术栈
-- **运行时**: Node.js 18.x
-- **框架**: Express.js 4.x
-- **数据库**: MongoDB 4.4 (副本集)
-- **缓存**: Redis 7.x
-- **认证**: JWT (JSON Web Tokens)
-- **API 规范**: OpenAPI 3.0
-- **容器化**: Docker & Docker Compose
+### Backend Technology Stack
+- **Runtime**: Node.js 18.x
+- **Framework**: Express.js 4.x
+- **Database**: MongoDB 4.4 (replica set)
+- **Cache**: Redis 7.x
+- **Authentication**: JWT (JSON Web Tokens)
+- **API Specification**: OpenAPI 3.0
+- **Containerization**: Docker & Docker Compose
 
-### 前端技术栈
-- **框架**: React 18.x
-- **路由**: React Router 6.x
-- **状态管理**: React Context + Hooks
-- **UI 组件**: Bootstrap 5 + React Bootstrap
-- **HTTP 客户端**: Axios
-- **构建工具**: Create React App (CRA)
+### Frontend Technology Stack
+- **Framework**: React 18.x
+- **Routing**: React Router 6.x
+- **State Management**: React Context + Hooks
+- **UI Components**: Bootstrap 5 + React Bootstrap
+- **HTTP Client**: Axios
+- **Build Tool**: Create React App (CRA)
 
-### 开发工具
-- **代码质量**: ESLint, Prettier
-- **测试**: Jest, Supertest
-- **API 测试**: Postman, curl
-- **版本控制**: Git
-- **CI/CD**: GitLab CI (配置中)
+### Development Tools
+- **Code Quality**: ESLint, Prettier
+- **Testing**: Jest, Supertest
+- **API Testing**: Postman, curl
+- **Version Control**: Git
+- **CI/CD**: GitLab CI (in configuration)
 
-## 项目结构
+## Project Structure
 
 ```
 fleximanage/
-├── backend/                    # 后端服务
-│   ├── api/                   # OpenAPI 规范
-│   ├── controllers/           # API 控制器
-│   ├── services/              # 业务逻辑服务
-│   ├── models/                # 数据模型
-│   ├── routes/                # 路由定义
-│   ├── middleware/            # 中间件
-│   ├── utils/                 # 工具函数
-│   ├── configs.js             # 配置管理
-│   ├── expressserver.js       # Express 服务器
-│   └── package.json           # 依赖管理
-├── frontend/                   # 前端应用
+├── backend/                    # Backend services
+│   ├── api/                   # OpenAPI specification
+│   ├── controllers/           # API controllers
+│   ├── services/              # Business logic services
+│   ├── models/                # Data models
+│   ├── routes/                # Route definitions
+│   ├── middleware/            # Middleware
+│   ├── utils/                 # Utility functions
+│   ├── configs.js             # Configuration management
+│   ├── expressserver.js       # Express server
+│   └── package.json           # Dependency management
+├── frontend/                   # Frontend application
 │   ├── src/
-│   │   ├── components/        # React 组件
-│   │   ├── pages/             # 页面组件
-│   │   ├── services/          # API 服务
-│   │   ├── hooks/             # 自定义 Hooks
-│   │   ├── utils/             # 工具函数
-│   │   └── App.js             # 应用入口
-│   ├── public/                # 静态资源
-│   └── package.json           # 前端依赖
-├── scripts/                    # 构建和部署脚本
-├── docker-compose.yml          # Docker 编排文件
-├── Dockerfile                  # Docker 构建文件
-└── README.md                   # 项目说明
+│   │   ├── components/        # React components
+│   │   ├── pages/             # Page components
+│   │   ├── services/          # API services
+│   │   ├── hooks/             # Custom Hooks
+│   │   ├── utils/             # Utility functions
+│   │   └── App.js             # Application entry point
+│   ├── public/                # Static assets
+│   └── package.json           # Frontend dependencies
+├── scripts/                    # Build and deployment scripts
+├── docker-compose.yml          # Docker orchestration file
+├── Dockerfile                  # Docker build file
+└── README.md                   # Project documentation
 ```
 
-## 开发环境搭建
+## Development Environment Setup
 
-### 1. 系统要求
+### 1. System Requirements
 ```bash
-# 必需软件
+# Required software
 - Node.js 18.x
 - Docker 20.10+
 - Docker Compose 2.0+
 - Git 2.x
 
-# 推荐工具
+# Recommended tools
 - Visual Studio Code
-- Postman (API 测试)
-- MongoDB Compass (数据库管理)
+- Postman (API testing)
+- MongoDB Compass (database management)
 ```
 
-### 2. 项目克隆和初始化
+### 2. Project Clone and Initialization
 ```bash
-# 克隆代码库
+# Clone the repository
 git clone https://github.com/Miwide-Info/fleximanage.git
 cd fleximanage
 
-# 安装后端依赖
+# Install backend dependencies
 cd backend
 npm install
 
-# 安装前端依赖
+# Install frontend dependencies
 cd ../frontend
 npm install
 
-# 返回项目根目录
+# Return to project root directory
 cd ..
 ```
 
-### 3. 环境配置
+### 3. Environment Configuration
 ```bash
-# 复制环境变量模板
+# Copy environment variable template
 cp .env.example .env.development
 
-# 编辑开发环境配置
+# Edit development environment configuration
 nano .env.development
 ```
 
-**开发环境变量示例**:
+**Development Environment Variables Example**:
 ```bash
 # .env.development
 NODE_ENV=development
 PORT=3000
 HTTPS_PORT=3443
 
-# 数据库配置
+# Database configuration
 MONGO_URI=mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwan?replicaSet=rs
 
-# 认证密钥
+# Authentication keys
 JWT_SECRET=development_jwt_secret_key
 DEVICE_SECRET_KEY=development_device_secret
 
-# CORS 配置
+# CORS configuration
 CORS_WHITELIST=http://localhost:3000,https://localhost:3443
 
-# 日志级别
+# Log level
 LOG_LEVEL=debug
 ```
 
-### 4. 服务启动
+### 4. Service Startup
 ```bash
-# 启动开发环境 (推荐)
+# Start development environment (recommended)
 docker compose -f docker-compose.dev.yml up -d
 
-# 或分别启动服务
+# Or start services separately
 docker compose up -d mongo-primary mongo-secondary1 mongo-secondary2 redis
 cd backend && npm run dev
 cd frontend && npm start
 ```
 
-## 开发工作流
+## Development Workflow
 
-### 1. 代码开发流程
+### 1. Code Development Process
 ```bash
-# 1. 创建功能分支
+# 1. Create feature branch
 git checkout -b feature/new-feature
 
-# 2. 开发代码
-# 编辑文件...
+# 2. Develop code
+# Edit files...
 
-# 3. 运行测试
+# 3. Run tests
 npm test
 
-# 4. 代码检查
+# 4. Code checking
 npm run lint
 npm run format
 
-# 5. 提交代码
+# 5. Commit code
 git add .
 git commit -m "feat: add new feature"
 
-# 6. 推送分支
+# 6. Push branch
 git push origin feature/new-feature
 
-# 7. 创建 Pull Request
+# 7. Create Pull Request
 ```
 
-### 2. 热重载开发
+### 2. Hot Reload Development
 ```bash
-# 后端热重载 (使用 nodemon)
+# Backend hot reload (using nodemon)
 cd backend
 npm run dev
 
-# 前端热重载 (CRA 内置)
+# Frontend hot reload (CRA built-in)
 cd frontend
 npm start
 ```
 
-### 3. API 开发和测试
+### 3. API Development and Testing
 ```bash
-# 启动 API 服务
+# Start API service
 cd backend
 npm run dev
 
-# 测试 API 端点
+# Test API endpoints
 curl -k https://localhost:3443/api/health
 
-# 使用 Postman 集合
-# 导入: postman/FlexiManage.postman_collection.json
+# Use Postman collection
+# Import: postman/FlexiManage.postman_collection.json
 ```
 
-## 代码规范
+## Coding Standards
 
-### 1. JavaScript/Node.js 规范
+### 1. JavaScript/Node.js Standards
 ```javascript
-// ESLint 配置 (.eslintrc.js)
+// ESLint configuration (.eslintrc.js)
 module.exports = {
   extends: [
     'eslint:recommended',
@@ -209,21 +209,21 @@ module.exports = {
   }
 };
 
-// 函数命名规范
+// Function naming convention
 const getUserById = async (userId) => {
-  // 使用 camelCase
+  // Use camelCase
   const userData = await User.findById(userId);
   return userData;
 };
 
-// 常量命名规范
+// Constant naming convention
 const API_BASE_URL = 'https://api.example.com';
 const MAX_RETRY_ATTEMPTS = 3;
 ```
 
-### 2. React 组件规范
+### 2. React Component Standards
 ```javascript
-// 函数组件示例
+// Function component example
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
@@ -269,7 +269,7 @@ DeviceList.propTypes = {
 export default DeviceList;
 ```
 
-### 3. API 路由规范
+### 3. API Route Standards
 ```javascript
 // routes/devices.js
 const express = require('express');
@@ -279,33 +279,33 @@ const authenticate = require('../middleware/authenticate');
 const validate = require('../middleware/validate');
 const deviceSchema = require('../schemas/deviceSchema');
 
-// GET /api/devices - 获取设备列表
+// GET /api/devices - Get device list
 router.get('/', 
   authenticate,
   DevicesController.getDevices
 );
 
-// POST /api/devices - 创建设备
+// POST /api/devices - Create device
 router.post('/', 
   authenticate,
   validate(deviceSchema),
   DevicesController.createDevice
 );
 
-// GET /api/devices/:id - 获取设备详情
+// GET /api/devices/:id - Get device details
 router.get('/:id', 
   authenticate,
   DevicesController.getDeviceById
 );
 
-// PUT /api/devices/:id - 更新设备
+// PUT /api/devices/:id - Update device
 router.put('/:id', 
   authenticate,
   validate(deviceSchema),
   DevicesController.updateDevice
 );
 
-// DELETE /api/devices/:id - 删除设备
+// DELETE /api/devices/:id - Delete device
 router.delete('/:id', 
   authenticate,
   DevicesController.deleteDevice
@@ -1207,19 +1207,19 @@ mongoose.set('debug', process.env.NODE_ENV === 'development');
 
 ---
 
-## 总结
+## Summary
 
-本开发文档涵盖了 FlexiManage 项目的完整开发流程，包括：
+This development guide covers the complete development process for the FlexiManage project, including:
 
-1. **环境搭建**: Docker 化开发环境
-2. **代码规范**: ESLint, Prettier 配置
-3. **API 开发**: RESTful API 设计和实现
-4. **数据库开发**: MongoDB 模型和查询优化
-5. **测试开发**: 单元测试、集成测试、E2E 测试
-6. **性能优化**: 缓存、查询优化、前端优化
-7. **部署发布**: Docker 部署和 CI/CD 流水线
-8. **监控调试**: 应用监控、日志记录、故障排除
+1. **Environment Setup**: Docker-based development environment
+2. **Coding Standards**: ESLint, Prettier configuration
+3. **API Development**: RESTful API design and implementation
+4. **Database Development**: MongoDB models and query optimization
+5. **Testing Development**: Unit tests, integration tests, E2E tests
+6. **Performance Optimization**: Caching, query optimization, frontend optimization
+7. **Deployment**: Docker deployment and CI/CD pipelines
+8. **Monitoring & Debugging**: Application monitoring, logging, troubleshooting
 
-遵循本文档的指导，开发者可以高效地进行 FlexiManage 项目的开发和维护工作。
+By following the guidance in this document, developers can efficiently develop and maintain the FlexiManage project.
 
-如需更多技术支持，请参考项目的其他文档文件或提交 GitHub Issue。
+For additional technical support, please refer to other project documentation files or submit a GitHub Issue.

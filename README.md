@@ -1,100 +1,100 @@
 # FlexiManage - Open Source SD-WAN Management Platform
 
-FlexiManage 是一个功能强大的开源 SD-WAN 管理平台，提供设备管理、网络配置、用户认证等核心功能。本项目基于 flexiWAN 开源项目，增强了功能并优化了用户体验。
+FlexiManage is a powerful open-source SD-WAN management platform that provides device management, network configuration, user authentication, and other core functionalities. This project is based on the flexiWAN open-source project with enhanced features and optimized user experience.
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-FlexiManage 现在支持 Docker 容器化部署，让您能够快速启动完整的 SD-WAN 管理环境。
+FlexiManage now supports Docker containerized deployment, allowing you to quickly start a complete SD-WAN management environment.
 
 ```bash
-# 克隆项目
+# Clone the project
 git clone https://github.com/Miwide-Info/fleximanage.git
 cd fleximanage
 
-# Docker 开发环境
+# Docker development environment
 docker compose -f docker-compose.dev.yml up -d
 
-# 访问管理界面
+# Access management interface
 https://manage.miwide.com:3443
 ```
 
-## 📚 文档导航
+## 📚 Documentation Navigation
 
-我们提供了完整的文档体系来帮助您使用和开发 FlexiManage：
+We provide a complete documentation system to help you use and develop FlexiManage:
 
-### 核心文档
-- **[技术指南](TECHNICAL_GUIDE.md)** - 系统架构、API 参考、数据库设计
-- **[开发文档](DEVELOPMENT_GUIDE.md)** - 开发环境、代码规范、测试指南  
-- **[Docker 使用指南](DOCKER_USAGE_GUIDE.md)** - 容器部署、环境配置、故障排除
-- **[操作指南](OPERATIONS_GUIDE.md)** - 系统管理、监控、维护
+### Core Documentation
+- **[Technical Guide](TECHNICAL_GUIDE.md)** - System architecture, API reference, database design
+- **[Development Guide](DEVELOPMENT_GUIDE.md)** - Development environment, coding standards, testing guide  
+- **[Docker Usage Guide](DOCKER_USAGE_GUIDE.md)** - Container deployment, environment configuration, troubleshooting
+- **[Operations Guide](OPERATIONS_GUIDE.md)** - System administration, monitoring, maintenance
 
-### 项目信息
-- **[开发进展](DEVELOPMENT_PROGRESS.md)** - 功能实现、技术决策、里程碑
-- **[项目状态](PROJECT_STATUS.md)** - 当前状态、路线图、贡献指南
+### Project Information
+- **[Development Progress](DEVELOPMENT_PROGRESS.md)** - Feature implementation, technical decisions, milestones
+- **[Project Status](PROJECT_STATUS.md)** - Current status, roadmap, contribution guidelines
 
-## ✨ 主要特性
+## ✨ Key Features
 
-### 🏗️ 系统架构
-- **微服务架构**: Node.js + Express + MongoDB + Redis
-- **容器化部署**: Docker Compose 编排，支持开发和生产环境
-- **高可用设计**: MongoDB 副本集、Redis 缓存、负载均衡
-- **安全认证**: JWT 令牌、HTTPS、CORS 保护
+### 🏗️ System Architecture
+- **Microservice Architecture**: Node.js + Express + MongoDB + Redis
+- **Containerized Deployment**: Docker Compose orchestration supporting development and production environments
+- **High Availability Design**: MongoDB replica set, Redis caching, load balancing
+- **Security Authentication**: JWT tokens, HTTPS, CORS protection
 
-### 🎯 核心功能
-- **设备管理**: 设备注册、状态监控、配置管理
-- **用户管理**: 多租户支持、权限控制、组织管理
-- **网络配置**: 接口配置、策略管理、隧道建立
-- **监控告警**: 实时监控、日志记录、性能分析
+### 🎯 Core Functionality
+- **Device Management**: Device registration, status monitoring, configuration management
+- **User Management**: Multi-tenant support, permission control, organization management
+- **Network Configuration**: Interface configuration, policy management, tunnel establishment
+- **Monitoring & Alerting**: Real-time monitoring, logging, performance analysis
 
-### 🔧 开发体验
-- **现代化 UI**: React 18 + Bootstrap 5
-- **API 优先**: OpenAPI 3.0 规范、RESTful 设计
-- **开发工具**: 热重载、代码检查、自动测试
-- **调试支持**: 详细日志、错误追踪、性能分析
+### 🔧 Development Experience
+- **Modern UI**: React 18 + Bootstrap 5
+- **API-First**: OpenAPI 3.0 specification, RESTful design
+- **Development Tools**: Hot reload, code linting, automated testing
+- **Debug Support**: Detailed logging, error tracking, performance analysis
 
-## 🛠️ 技术栈
+## 🛠️ Technology Stack
 
-### 后端
+### Backend
 - Node.js 18 + Express 4
-- MongoDB 4.4 (副本集)
-- Redis 7.x (缓存)
-- JWT 认证
+- MongoDB 4.4 (replica set)
+- Redis 7.x (caching)
+- JWT authentication
 - OpenAPI 3.0
 
-### 前端  
+### Frontend  
 - React 18
 - React Router 6
 - Bootstrap 5
 - Axios
 
-### 基础设施
+### Infrastructure
 - Docker & Docker Compose
-- Nginx (生产环境)
-- SSL/TLS 加密
-- 系统监控
+- Nginx (production environment)
+- SSL/TLS encryption
+- System monitoring
 
-## 🚀 部署方式
+## 🚀 Deployment Options
 
-### Docker 部署 (推荐)
+### Docker Deployment (Recommended)
 ```bash
-# 开发环境
+# Development environment
 docker compose -f docker-compose.dev.yml up -d
 
-# 生产环境
+# Production environment
 docker compose up -d
 ```
 
-### 手动部署
+### Manual Deployment
 ```bash
-# 安装依赖
+# Install dependencies
 cd backend && npm install
 cd ../frontend && npm install && npm run build
 
-# 启动服务
+# Start services
 cd backend && npm start
 ```
 
-详细的部署指南请参考 [Docker 使用指南](DOCKER_USAGE_GUIDE.md)。
+For detailed deployment instructions, please refer to the [Docker Usage Guide](DOCKER_USAGE_GUIDE.md).
 
 ## 💡 关于 flexiWAN
 
@@ -316,49 +316,49 @@ If a user document has `admin: true`, the system returns a dynamically generated
 User permissions are cached in-memory for 30 seconds (keyed by userId + defaultAccount + defaultOrg). A helper `invalidateUserPermissions(userId)` is exported for future hooks after membership changes.
 
 
-## 🤝 贡献指南
+## 🤝 Contributing
 
-我们欢迎社区贡献！请查看 [开发文档](DEVELOPMENT_GUIDE.md) 了解开发环境搭建和代码规范。
+We welcome community contributions! Please check the [Development Guide](DEVELOPMENT_GUIDE.md) for development environment setup and coding standards.
 
-### 开发工作流
-1. Fork 项目并创建功能分支
-2. 编写代码和测试
-3. 确保通过所有检查
-4. 提交 Pull Request
+### Development Workflow
+1. Fork the project and create a feature branch
+2. Write code and tests
+3. Ensure all checks pass
+4. Submit a Pull Request
 
-### 问题报告
-- 使用 GitHub Issues 报告 bug
-- 提供详细的复现步骤
-- 包含系统环境信息
+### Issue Reporting
+- Use GitHub Issues to report bugs
+- Provide detailed reproduction steps
+- Include system environment information
 
-## 📈 项目状态
+## 📈 Project Status
 
-- ✅ **核心功能**: 设备管理、用户认证、API 服务
-- ✅ **容器化**: Docker 部署和开发环境
-- ✅ **文档**: 完整的技术和开发文档
-- 🔄 **持续改进**: 性能优化、功能增强
+- ✅ **Core Features**: Device management, user authentication, API services
+- ✅ **Containerization**: Docker deployment and development environment
+- ✅ **Documentation**: Complete technical and development documentation
+- 🔄 **Continuous Improvement**: Performance optimization, feature enhancement
 
-详细状态请查看 [项目状态](PROJECT_STATUS.md)。
+For detailed status, please check [Project Status](PROJECT_STATUS.md).
 
-## 📞 支持与联系
+## 📞 Support & Contact
 
-- **项目文档**: 参考上方文档导航
-- **问题报告**: GitHub Issues
-- **功能建议**: GitHub Discussions
-- **社区支持**: [flexiWAN User Group](https://groups.google.com/a/flexiwan.com/forum/#!forum/flexiwan-users)
+- **Project Documentation**: Refer to the documentation navigation above
+- **Issue Reports**: GitHub Issues
+- **Feature Requests**: GitHub Discussions
+- **Community Support**: [flexiWAN User Group](https://groups.google.com/a/flexiwan.com/forum/#!forum/flexiwan-users)
 
-## 📄 版本管理
+## 📄 Versioning
 
-FlexiManage 使用 [SemVer](https://semver.org/) 语义化版本控制。
+FlexiManage uses [SemVer](https://semver.org/) semantic versioning.
 
-## 🔐 许可证
+## 🔐 License
 
-本项目基于 GNU AGPLv3 许可证开源 - 详见 [LICENSE](LICENSE) 文件。
+This project is open-sourced under the GNU AGPLv3 License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 开源组件
+## 🙏 Open Source Components
 
-本项目使用的开源组件列表请参考 [OPENSOURCE.md](OPENSOURCE.md)。
+For a list of open source components used in this project, please refer to [OPENSOURCE.md](OPENSOURCE.md).
 
 ---
 
-**FlexiManage** - 让 SD-WAN 管理更简单、更强大、更开放 🌐
+**FlexiManage** - Making SD-WAN management simpler, more powerful, and more open 🌐
