@@ -94,7 +94,7 @@ const configEnv = {
     // Key used for device tokens, override default with environment variable DEVICE_SECRET_KEY
     deviceTokenSecretKey: 'abcdefg1234567',
     // Allowed servers for token creation (fallback for all environments)
-    tokenAllowedServers: 'https://local.miwide.com:3443,http://local.miwide.com:3000,https://manage.miwide.com:443,https://manage.miwide.com:4443,https://manage.miwide.com,local.miwide.com:3443,manage.miwide.com:443,manage.miwide.com',
+    tokenAllowedServers: 'https://local.miwide.com:3443,http://local.miwide.com:3000,https://manage.miwide.com:3443,https://manage.miwide.com:443,https://manage.miwide.com:4443,https://manage.miwide.com,local.miwide.com:3443,manage.miwide.com:443,manage.miwide.com',
   // Key used to validate google captcha token (server secret). Can be supplied via env CAPTCHA_SECRET_KEY.
   // Empty string means backend will NOT verify with Google (dev convenience) and will trust client side.
   captchaKey: process.env.CAPTCHA_SECRET_KEY || '',
@@ -166,9 +166,9 @@ const configEnv = {
     // The broker is sent to the device when it registers.
     // It's possible to use multiple brokers in case of multiple domains, in that case
     // the system will use the last broker that matches the domain used in the token or the first broker if not found
-    agentBroker: ['local.miwide.com:3443'],
+    agentBroker: ['manage.miwide.com:3443'],
     // Whitelist of allowed domains for CORS checks
-    corsWhiteList: ['http://local.miwide.com:3000', 'https://local.miwide.com:3000', 'https://local.miwide.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
+    corsWhiteList: ['http://local.miwide.com:3000', 'https://local.miwide.com:3000', 'https://local.miwide.com:3443', 'https://manage.miwide.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
   // Client static root directory (auto-detected: prefers production build if exists)
   clientStaticDir: detectedClientStaticDir,
     // Mgmt-Agent protocol version
@@ -309,7 +309,7 @@ const configEnv = {
     clientStaticDir: '../frontend/build',
     // Allowed servers for token creation (override restServerUrl list for token validation only)
     // Include local dev and custom manage.miwide.com domain.
-    tokenAllowedServers: 'https://local.miwide.com:3443,http://local.miwide.com:3000,https://manage.miwide.com:443,https://manage.miwide.com:4443,https://manage.miwide.com,local.miwide.com:3443,manage.miwide.com:443,manage.miwide.com',
+    tokenAllowedServers: 'https://local.miwide.com:3443,http://local.miwide.com:3000,https://manage.miwide.com:3443,https://manage.miwide.com:443,https://manage.miwide.com:4443,https://manage.miwide.com,local.miwide.com:3443,manage.miwide.com:443,manage.miwide.com',
     mailerBypassCert: true,
     SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest-testing',
     userTokenExpiration: 604800,

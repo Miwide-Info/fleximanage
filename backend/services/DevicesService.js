@@ -226,7 +226,10 @@ class DevicesService {
           'useDhcpDnsServers',
           'ospf'
         ]);
-        retIf._id = retIf._id.toString();
+        retIf._id = retIf._id ? retIf._id.toString() : undefined;
+        if (retIf._id === undefined) {
+          delete retIf._id;
+        }
         if (retIf.qosPolicy) {
           retIf.qosPolicy = (retIf.qosPolicy._id ? retIf.qosPolicy._id : retIf.qosPolicy)
             .toString();
@@ -258,7 +261,7 @@ class DevicesService {
           'onLink',
           'conditions'
         ]);
-        retRoute._id = retRoute._id.toString();
+        retRoute._id = retRoute._id ? retRoute._id.toString() : '';
         return retRoute;
       });
     } else retStaticRoutes = [];
@@ -290,7 +293,7 @@ class DevicesService {
         } else macAssignList = [];
 
         retDhcp.macAssign = macAssignList;
-        retDhcp._id = retDhcp._id.toString();
+        retDhcp._id = retDhcp._id ? retDhcp._id.toString() : '';
         return retDhcp;
       });
     } else retDhcpList = [];
@@ -312,7 +315,7 @@ class DevicesService {
           'system',
           'reference'
         ]);
-        retRule._id = retRule._id.toString();
+        retRule._id = retRule._id ? retRule._id.toString() : '';
         return retRule;
       }) : [];
 
@@ -324,14 +327,15 @@ class DevicesService {
     // ret.org should be organization ID due to backward compatibility.
     // we adding the organization info to a new field
     retDevice.orgInfo = {
-      vxlanPort: retDevice.org.vxlanPort
+      vxlanPort: retDevice.org ? retDevice.org.vxlanPort : '4789'
     };
-    retDevice.org = retDevice.org._id.toString();
+    retDevice.org = retDevice.org && retDevice.org._id ? retDevice.org._id.toString() : '';
 
     retDevice._id = retDevice._id.toString();
-    retDevice.account = retDevice.account.toString();
+    retDevice.account = retDevice.account ? retDevice.account.toString() : '';
     retDevice.upgradeSchedule = pick(item.upgradeSchedule, ['jobQueued', '_id', 'time']);
-    retDevice.upgradeSchedule._id = retDevice.upgradeSchedule._id.toString();
+    retDevice.upgradeSchedule._id = retDevice.upgradeSchedule._id
+      ? retDevice.upgradeSchedule._id.toString() : '';
     retDevice.upgradeSchedule.time = (retDevice.upgradeSchedule.time)
       ? retDevice.upgradeSchedule.time.toISOString() : null;
     retDevice.versions = pick(item.versions, ['agent', 'router', 'device', 'vpp', 'frr']);

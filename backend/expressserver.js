@@ -153,6 +153,16 @@ class ExpressServer {
     statusesInDb.start();
     releasePendingTunnels.start();
 
+    // Domain redirect: redirect local.miwide.com to manage.miwide.com
+    this.app.all('*', (req, res, next) => {
+      if (req.hostname === 'local.miwide.com') {
+        const protocol = req.secure ? 'https' : 'http';
+        const port = req.secure ? ':3443' : ':3000';
+        return res.redirect(307, `${protocol}://manage.miwide.com${port}${req.url}`);
+      }
+      return next();
+    });
+
     // HTTPS redirect only if configured AND https server actually initialized
     this.app.all('*', (req, res, next) => {
       const redirectDesired = configs.get('shouldRedirectHttps', 'boolean');
