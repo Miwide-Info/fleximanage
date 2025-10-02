@@ -11,7 +11,6 @@ services:
       mongod --replSet rs --bind_ip_all --port 27017 --oplogSize 256
     volumes:
       - mongo_primary_data:/data/db
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
       interval: 10s
@@ -141,17 +140,8 @@ services:
     ports:
       - "3000:3000"   # HTTP
       - "3443:3443"   # HTTPS
-    environment:
-      NODE_ENV: development  # Changed to development for dynamic frontend
-      MONGO_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwan?replicaSet=rs
-      MONGO_ANALYTICS_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwanAnalytics?replicaSet=rs
-      MONGO_BILLING_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexibilling?replicaSet=rs
-      MONGO_VPN_URL: mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexivpn?replicaSet=rs
-      REDIS_URL: redis://redis:6379
-      MAILER_HOST: smtp4dev
-      MAILER_PORT: 25
-      CAPTCHA_SECRET_KEY: ""
-      CAPTCHA_SITE_KEY: ""
+    env_file:
+      - .env.docker
     volumes:
       - ./backend/logs:/app/backend/logs
       - ./backend/bin/cert.local.miwide.com:/app/backend/bin/cert.local.miwide.com:ro  # SSL certificates

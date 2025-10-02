@@ -60,11 +60,11 @@ const configEnv = {
   // This is the default configuration, override by the following sections
   default: {
     // URL of the rest server
-    restServerUrl: ['https://local.miwide.com:3443'],
+    restServerUrl: [process.env.APP_URL || 'https://local.miwide.com:3443'],
     // URL of the UI server
-    uiServerUrl: ['https://local.miwide.com:3000'],
+    uiServerUrl: [process.env.UI_URL || 'https://local.miwide.com:3000'],
     // Key used for users tokens, override default with environment variable USER_SECRET_KEY
-    userTokenSecretKey: 'abcdefg1234567',
+    userTokenSecretKey: process.env.JWT_SECRET || 'abcdefg1234567',
     // Whether to validate open API response. True for testing and dev, False for production,
     // to remove unneeded fields from the response, use validateOpenAPIResponse = { removeAdditional: 'failing' }
     validateOpenAPIResponse: true,
@@ -92,20 +92,20 @@ const configEnv = {
     // The time to retain jobs until deleted from the database, in msec
     jobRetainTimeout: 604800000,
     // Key used for device tokens, override default with environment variable DEVICE_SECRET_KEY
-    deviceTokenSecretKey: 'abcdefg1234567',
+    deviceTokenSecretKey: process.env.DEVICE_SECRET_KEY || 'abcdefg1234567',
     // Allowed servers for token creation (fallback for all environments)
-    tokenAllowedServers: 'https://local.miwide.com:3443,http://local.miwide.com:3000,https://manage.miwide.com:3443,https://manage.miwide.com:443,https://manage.miwide.com:4443,https://manage.miwide.com,local.miwide.com:3443,manage.miwide.com:443,manage.miwide.com',
+    tokenAllowedServers: process.env.TOKEN_ALLOWED_SERVERS || 'https://local.miwide.com:3443,http://local.miwide.com:3000,https://manage.miwide.com:3443,https://manage.miwide.com:443,https://manage.miwide.com:4443,https://manage.miwide.com,local.miwide.com:3443,manage.miwide.com:443,manage.miwide.com',
   // Key used to validate google captcha token (server secret). Can be supplied via env CAPTCHA_SECRET_KEY.
   // Empty string means backend will NOT verify with Google (dev convenience) and will trust client side.
   captchaKey: process.env.CAPTCHA_SECRET_KEY || '',
     // Mongo main database
-    mongoUrl: `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexiwan?replicaSet=rs`,
+    mongoUrl: process.env.MONGO_URI || `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexiwan?replicaSet=rs`,
     // Mongo analytics database
-    mongoAnalyticsUrl: `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexiwanAnalytics?replicaSet=rs`,
+    mongoAnalyticsUrl: process.env.MONGO_ANALYTICS_URI || `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexiwanAnalytics?replicaSet=rs`,
     // Mongo Billing database
-    mongoBillingUrl: `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexibilling?replicaSet=rs`,
+    mongoBillingUrl: process.env.MONGO_BILLING_URI || `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexibilling?replicaSet=rs`,
     // Mongo VPN database
-    mongoVpnUrl: `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexivpn?replicaSet=rs`,
+    mongoVpnUrl: process.env.MONGO_VPN_URI || `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexivpn?replicaSet=rs`,
     // Billing Redirect OK page url
     billingRedirectOkUrl: 'https://local.miwide.com/ok.html',
     // Biling config site - this is used as the billing site name in ChargeBee
@@ -123,7 +123,7 @@ const configEnv = {
     autoCollectionCharges: 'off', // "on" or "off"
     // Redis host and port, override default with environment variable REDIS_URL
     // If 'requirepass' enabled in redis configuration use 'redis://authpass@host:port'
-    redisUrl: 'redis://localhost:6379',
+    redisUrl: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`,
     // Redis connectivity options
     redisTotalRetryTime: 1000 * 60 * 60,
     redisTotalAttempts: 10,
@@ -145,13 +145,13 @@ const configEnv = {
     connectExpireTime: 300,
     // HTTP port of the node server. On production we usually forward port 80 to this port using:
     // sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 3000
-    httpPort: 3000,
+    httpPort: process.env.HTTP_PORT || 3000,
     // HTTPS port of the node server. On production weWe usually forward port 443 to this port using:
     // sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j REDIRECT --to-port 3443
-    httpsPort: 3443,
+    httpsPort: process.env.HTTPS_PORT || 3443,
     // This port is used when redirecting the client
     // In production it can be set
-    redirectHttpsPort: 3443,
+    redirectHttpsPort: process.env.REDIRECT_HTTPS_PORT || 3443,
     // Should we redirect to https, should be set to false if running behind a secure proxy such as CloudFlare
     shouldRedirectHttps: false,
     // Certificate key location, under bin directory
@@ -166,9 +166,9 @@ const configEnv = {
     // The broker is sent to the device when it registers.
     // It's possible to use multiple brokers in case of multiple domains, in that case
     // the system will use the last broker that matches the domain used in the token or the first broker if not found
-    agentBroker: ['manage.miwide.com:3443'],
+    agentBroker: process.env.AGENT_BROKER ? process.env.AGENT_BROKER.split(',') : ['manage.miwide.com:3443'],
     // Whitelist of allowed domains for CORS checks
-    corsWhiteList: ['http://local.miwide.com:3000', 'https://local.miwide.com:3000', 'https://local.miwide.com:3443', 'https://manage.miwide.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
+    corsWhiteList: process.env.CORS_WHITELIST ? process.env.CORS_WHITELIST.split(',') : ['http://local.miwide.com:3000', 'https://local.miwide.com:3000', 'https://local.miwide.com:3443', 'https://manage.miwide.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
   // Client static root directory (auto-detected: prefers production build if exists)
   clientStaticDir: detectedClientStaticDir,
     // Mgmt-Agent protocol version
@@ -179,9 +179,9 @@ const configEnv = {
     // Logging default level
     logLevel: 'verbose',
     // Hostname of SMTP server - for sending mails
-    mailerHost: '127.0.0.1',
+    mailerHost: process.env.MAILER_HOST || '127.0.0.1',
     // Port of SMTP server
-    mailerPort: 25,
+    mailerPort: process.env.MAILER_PORT || 25,
     // Bypass mailer certificate validation
     mailerBypassCert: false,
     // From address used when sending emails
@@ -245,7 +245,7 @@ const configEnv = {
     // TCP clamping header size, this value will be reduced from the MTU when calculating the mss clamping size
     tcpClampingHeaderSize: 40,
     // flexiVpn server portal url
-    flexiVpnServer: ['https://localvpn.miwide.com:4443'], // can be string or list
+    flexiVpnServer: process.env.FLEXI_VPN_SERVER ? process.env.FLEXI_VPN_SERVER.split(',') : ['https://localvpn.miwide.com:4443'], // can be string or list
     // After successful vpn client authentication, the OpenVPN server will generate tmp token valid for the below number of seconds.
     // On the following renegotiations, the OpenVPN client will pass this token instead of the users password
     vpnTmpTokenTime: 43200,
@@ -314,7 +314,7 @@ const configEnv = {
     SwRepositoryUrl: 'https://deb.miwide.com/info/flexiwan-router/latest-testing',
     userTokenExpiration: 604800,
     logLevel: 'debug',
-    mailerPort: 1025,
+    mailerPort: process.env.MAILER_PORT || 1025,
     // Enable HTTPS & redirect automatically in local development so no need for env vars each run
     shouldRedirectHttps: true,
     // Use relative (no leading slash) so path.join(__dirname,'bin',value) resolves correctly
