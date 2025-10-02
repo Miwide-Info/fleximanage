@@ -229,7 +229,7 @@ exports.verifyUserJWT = function (req, res, next) {
       return next();
     }
     
-    // 调试：打印用于判定路径的 url / originalUrl
+    // Debug: print url / originalUrl used for path determination
     logger.debug('verifyUserJWT path check', { params: { url: req.url, originalUrl: req.originalUrl } });
     passport.authenticate('jwt', { session: false }, async (err, user, info) => {
       if (err || !user) {

@@ -61,7 +61,7 @@ const Accounts = new Schema({
     type: String,
     required: true,
     enum: SERVICE_TYPES,
-    // 保留原有正则以提供更详细的错误信息（即便 enum 先失败也能提示格式）
+    // Keep original regex to provide detailed error messages (even if enum fails first)
     match: [
       /^[a-z0-9 /()_-]{2,30}$/i,
       'Service type may contain letters, numbers, spaces, / ( ) _ -'

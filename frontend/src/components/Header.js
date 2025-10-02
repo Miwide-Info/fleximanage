@@ -8,7 +8,7 @@ const Header = ({ onLogout }) => {
   const notificationCount = 13; // TODO: replace with real count from props/store
   const displayCount = notificationCount > 9 ? '9+' : notificationCount;
 
-  // 解析 token，获取用户名/email
+  // Parse token to get username/email
   let userLabel = 'User';
   try {
     const token = localStorage.getItem('token');

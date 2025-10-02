@@ -1,243 +1,243 @@
-# FlexiManage Docker 使用指南
+# FlexiManage Docker Usage Guide
 
-## 概述
+## Overview
 
-FlexiManage 是一个开源的 SD-WAN 管理平台，本文档提供了使用 Docker 运行 FlexiManage 后端服务的完整指南。
+FlexiManage is an open-source SD-WAN management platform. This document provides a complete guide for running FlexiManage backend services using Docker.
 
-## 系统要求
+## System Requirements
 
-### 最低配置
-- **操作系统**: Linux (Ubuntu 20.04+), macOS, Windows with WSL2
-- **内存**: 4GB RAM (推荐 8GB+)
-- **存储**: 20GB 可用空间
-- **网络**: 需要访问互联网进行依赖下载
+### Minimum Configuration
+- **Operating System**: Linux (Ubuntu 20.04+), macOS, Windows with WSL2
+- **Memory**: 4GB RAM (recommended 8GB+)
+- **Storage**: 20GB available space
+- **Network**: Internet access required for dependency downloads
 
-### 必需软件
+### Required Software
 - **Docker**: 20.10+ 
 - **Docker Compose**: 2.0+
-- **Git**: 用于克隆代码仓库
+- **Git**: For cloning code repository
 
-### 端口要求
-确保以下端口未被占用：
-- `3000` - HTTP API 服务
-- `3443` - HTTPS API 服务  
-- `27017-27019` - MongoDB 副本集
-- `6379` - Redis 缓存
-- `8025` - SMTP4Dev (开发邮件服务)
+### Port Requirements
+Ensure the following ports are not occupied:
+- `3000` - HTTP API service
+- `3443` - HTTPS API service  
+- `27017-27019` - MongoDB replica set
+- `6379` - Redis cache
+- `8025` - SMTP4Dev (development mail service)
 
-## 快速启动
+## Quick Start
 
-### 1. 获取代码
+### 1. Get Code
 ```bash
 git clone https://github.com/Miwide-Info/fleximanage.git
 cd fleximanage
 ```
 
-### 2. 环境配置
+### 2. Environment Configuration
 ```bash
-# 复制环境变量模板
+# Copy environment variable template
 cp .env.example .env.docker
 
-# 根据需要编辑环境变量
+# Edit environment variables as needed
 nano .env.docker
 ```
 
-### 3. 启动服务
+### 3. Start Services
 ```bash
-# 使用启动脚本（推荐）
+# Use startup script (recommended)
 ./start.sh
 
-# 或手动启动
+# Or start manually
 docker compose up -d
 ```
 
-### 4. 验证服务
+### 4. Verify Services
 ```bash
-# 检查容器状态
+# Check container status
 docker compose ps
 
-# 健康检查
+# Health check
 curl -k https://localhost:3443/api/health
 ```
 
-## 服务架构
+## Service Architecture
 
-### 核心服务
+### Core Services
 
-#### 1. Backend 服务
-- **容器名**: `flexi-backend`
-- **技术栈**: Node.js 18 + Express.js
-- **端口**: 
-  - `3000` - HTTP API
-  - `3443` - HTTPS API (SSL/TLS)
-- **健康检查**: `GET /api/health`
-- **API 文档**: `https://localhost:3443/api-docs`
+#### 1. Backend Service
+- **Container Name**: `flexi-backend`
+- **Technology Stack**: Node.js 18 + Express.js
+- **Ports**: 
+  - `3000` - HTTP
+  - `3443` - HTTPS
+- **Health Check**: `GET /api/health`
+- **API Documentation**: `https://localhost:3443/api-docs`
 
-#### 2. MongoDB 副本集
-- **Primary**: `flexi-mongo-primary:27017`
-- **Secondary1**: `flexi-mongo-secondary1:27018`  
-- **Secondary2**: `flexi-mongo-secondary2:27019`
-- **副本集名**: `rs`
-- **数据持久化**: Docker volumes
+#### 2. MongoDB Replica Set
+- **Primary**: `mongo-primary:27017`
+- **Secondary 1**: `mongo-secondary1:27018`
+- **Secondary 2**: `mongo-secondary2:27019`
+- **Replica Set Name**: `rs`
+- **Data Persistence**: Docker volumes
 
-#### 3. Redis 缓存
-- **容器名**: `flexi-redis`
-- **端口**: `6379`
-- **用途**: 会话管理、API 缓存
+#### 3. Redis Cache
+- **Container Name**: `flexi-redis`
+- **Port**: `6379`
+- **Purpose**: Session management, API caching
 
-#### 4. SMTP4Dev (开发环境)
-- **容器名**: `flexi-smtp`
-- **端口**: `8025` (Web UI)
-- **用途**: 邮件测试和调试
+#### 4. SMTP4Dev (Development Environment)
+- **Container Name**: `flexi-smtp`
+- **Port**: `8025` (Web UI)
+- **Purpose**: Email testing and debugging
 
-### 网络配置
-- **网络名**: `flexi-network`
-- **类型**: Bridge 网络
-- **服务间通信**: 容器名解析
+### Network Configuration
+- **Network Name**: `flexi-network`
+- **Type**: Bridge network
+- **Inter-service Communication**: Container name resolution
 
-## 开发环境配置
+## Development Environment Configuration
 
-### 1. 开发模式启动
+### 1. Development Mode Startup
 ```bash
-# 启动开发环境
+# Start development environment
 docker compose -f docker-compose.dev.yml up -d
 
-# 查看实时日志
+# View real-time logs
 docker compose logs -f backend
 ```
 
-### 2. 代码热重载
+### 2. Code Hot Reload
 ```bash
-# 挂载源代码目录实现热重载
+# Mount source code directory for hot reload
 docker compose -f docker-compose.dev.yml up -d
 
-# 进入后端容器
-docker exec -it flexi-backend bash
+# Enter backend container
+docker exec -it flexi-backend sh
 ```
 
-### 3. 数据库管理
+### 3. Database Management
 ```bash
-# 连接 MongoDB Primary
-docker exec -it flexi-mongo-primary mongo
+# Connect to MongoDB Primary
+docker exec -it flexi-mongo-primary mongosh
 
-# 检查副本集状态
-docker exec -it flexi-mongo-primary mongo --eval "rs.status()"
+# Check replica set status
+docker exec -it flexi-mongo-primary mongosh --eval "rs.status()"
 
-# 数据库备份
-docker exec flexi-mongo-primary mongodump --db flexiwan --out /data/backup
+# Database backup
+docker exec flexi-mongo-primary mongodump --out /backup
 ```
 
-## 环境变量配置
+## Environment Variables Configuration
 
-### 关键环境变量
+### Key Environment Variables
 
 ```bash
-# .env.docker 配置示例
+# .env.docker configuration example
 
-# 应用配置
+# Application configuration
 NODE_ENV=development
 PORT=3000
 HTTPS_PORT=3443
 
-# 数据库配置
+# Database configuration
 MONGO_URI=mongodb://mongo-primary:27017,mongo-secondary1:27017,mongo-secondary2:27017/flexiwan?replicaSet=rs
 
-# 认证配置
+# Authentication configuration
 JWT_SECRET=your_jwt_secret_here
 DEVICE_SECRET_KEY=your_device_secret_here
 
-# 网络配置
+# Network configuration
 AGENT_BROKER=localhost:3443
 CORS_WHITELIST=http://localhost:3000,https://localhost:3443
 
-# Redis 配置
+# Redis configuration
 REDIS_URL=redis://redis:6379
 
-# 邮件配置 (开发)
+# Mail configuration (development)
 SMTP_HOST=smtp4dev
 SMTP_PORT=25
 ```
 
-### 生产环境变量
+### Production Environment Variables
 ```bash
-# 生产环境额外配置
+# Additional production environment configuration
 NODE_ENV=production
 LOG_LEVEL=info
 SSL_CERT_PATH=/app/certs/certificate.pem
 SSL_KEY_PATH=/app/certs/private.key
 
-# 外部数据库
+# External database
 MONGO_URI=mongodb://prod-mongo1:27017,prod-mongo2:27017,prod-mongo3:27017/flexiwan?replicaSet=rs&ssl=true
 MONGO_AUTH_SOURCE=admin
 MONGO_USERNAME=flexiwan_user
 MONGO_PASSWORD=secure_password
 
-# 外部 Redis
+# External Redis
 REDIS_URL=redis://prod-redis:6379
 REDIS_PASSWORD=redis_password
 ```
 
-## API 使用指南
+## API Usage Guide
 
-### 1. 认证
+### 1. Authentication
 ```bash
-# 登录获取 JWT Token
+# Login to get JWT Token
 curl -k -X POST https://localhost:3443/api/users/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin@flexiwan.com","password":"admin"}'
 
-# 使用 Token 访问 API
+# Use Token to access API
 curl -k -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   https://localhost:3443/api/devices
 ```
 
-### 2. 常用 API 端点
+### 2. Common API Endpoints
 ```bash
-# 健康检查
+# Health check
 GET /api/health
 
-# 用户管理
-POST /api/users/login          # 用户登录
-GET  /api/users/profile        # 获取用户信息
+# User management
+POST /api/users/login          # User login
+GET  /api/users/profile        # Get user information
 
-# 设备管理
-GET    /api/devices            # 获取设备列表
-POST   /api/devices            # 注册新设备
-GET    /api/devices/:id        # 获取设备详情
-PUT    /api/devices/:id        # 更新设备配置
-DELETE /api/devices/:id        # 删除设备
+# Device management
+GET    /api/devices            # Get device list
+POST   /api/devices            # Register new device
+GET    /api/devices/:id        # Get device details
+PUT    /api/devices/:id        # Update device configuration
+DELETE /api/devices/:id        # Delete device
 
-# 组织管理
-GET  /api/organizations        # 获取组织列表
-POST /api/organizations        # 创建组织
+# Organization management
+GET  /api/organizations        # Get organization list
+POST /api/organizations        # Create organization
 
-# Token 管理
-GET  /api/tokens              # 获取 Token 列表
-POST /api/tokens              # 创建新 Token
+# Token management
+GET  /api/tokens              # Get token list
+POST /api/tokens              # Create new token
 ```
 
-## 故障排除
+## Troubleshooting
 
-### 常见问题
+### Common Issues
 
-#### 1. 容器启动失败
+#### 1. Container Startup Failure
 ```bash
-# 检查容器状态
+# Check container status
 docker compose ps
 
-# 查看错误日志
+# View error logs
 docker compose logs backend
 
-# 重启服务
+# Restart service
 docker compose restart backend
 ```
 
-#### 2. 数据库连接问题
+#### 2. Database Connection Issues
 ```bash
-# 检查 MongoDB 副本集状态
+# Check MongoDB replica set status
 docker exec flexi-mongo-primary mongo --eval "rs.status()"
 
-# 重新初始化副本集
+# Re-initialize replica set
 docker exec flexi-mongo-primary mongo --eval '
 rs.initiate({
   _id: "rs",
@@ -250,12 +250,12 @@ rs.initiate({
 '
 ```
 
-#### 3. SSL 证书问题
+#### 3. SSL Certificate Issues
 ```bash
-# 检查证书文件
+# Check certificate files
 ls -la backend/bin/cert.*
 
-# 重新生成自签证书
+# Regenerate self-signed certificate
 openssl req -x509 -newkey rsa:4096 \
   -keyout backend/bin/cert.localhost/domain.key \
   -out backend/bin/cert.localhost/certificate.pem \
@@ -263,43 +263,43 @@ openssl req -x509 -newkey rsa:4096 \
   -subj "/CN=localhost"
 ```
 
-#### 4. 端口冲突
+#### 4. Port Conflicts
 ```bash
-# 检查端口占用
+# Check port usage
 netstat -tulpn | grep :3443
 
-# 修改端口映射
-# 编辑 docker-compose.yml 中的 ports 配置
+# Modify port mapping
+# Edit ports configuration in docker-compose.yml
 ```
 
-### 日志调试
+### Log Debugging
 
-#### 1. 应用日志
+#### 1. Application Logs
 ```bash
-# 实时查看应用日志
+# View real-time application logs
 docker compose logs -f backend
 
-# 查看特定时间段日志
+# View logs for specific time period
 docker compose logs backend --since="2025-01-01T00:00:00"
 
-# 导出日志到文件
+# Export logs to file
 docker compose logs backend > backend.log
 ```
 
-#### 2. 数据库日志
+#### 2. Database Logs
 ```bash
-# MongoDB 日志
+# MongoDB logs
 docker compose logs mongo-primary
 
-# Redis 日志
+# Redis logs
 docker compose logs redis
 ```
 
-## 性能优化
+## Performance Optimization
 
-### 1. 资源限制
+### 1. Resource Limits
 ```yaml
-# docker-compose.yml 中添加资源限制
+# Add resource limits in docker-compose.yml
 services:
   backend:
     deploy:
@@ -312,55 +312,55 @@ services:
           cpus: '0.5'
 ```
 
-### 2. 数据库优化
+### 2. Database Optimization
 ```bash
-# MongoDB 连接池配置
+# MongoDB connection pool configuration
 MONGO_MAX_POOL_SIZE=10
 MONGO_MIN_POOL_SIZE=2
 
-# Redis 内存限制
+# Redis memory limit
 REDIS_MAXMEMORY=256mb
 REDIS_MAXMEMORY_POLICY=allkeys-lru
 ```
 
-### 3. 缓存配置
+### 3. Cache Configuration
 ```bash
-# Node.js 缓存设置
+# Node.js cache settings
 NODE_CACHE_TTL=600
 NODE_CACHE_MAX_KEYS=1000
 ```
 
-## 数据管理
+## Data Management
 
-### 1. 数据备份
+### 1. Data Backup
 ```bash
 #!/bin/bash
-# backup.sh - 数据备份脚本
+# backup.sh - Data backup script
 
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/backups"
 
-# MongoDB 备份
+# MongoDB backup
 docker exec flexi-mongo-primary mongodump \
   --db flexiwan \
   --out /data/backup_$DATE
 
-# 压缩备份
+# Compress backup
 docker exec flexi-mongo-primary tar -czf \
   /data/flexiwan_backup_$DATE.tar.gz \
   -C /data backup_$DATE
 
-# 复制到宿主机
+# Copy to host machine
 docker cp flexi-mongo-primary:/data/flexiwan_backup_$DATE.tar.gz \
   $BACKUP_DIR/
 
 echo "Backup completed: $BACKUP_DIR/flexiwan_backup_$DATE.tar.gz"
 ```
 
-### 2. 数据恢复
+### 2. Data Restore
 ```bash
 #!/bin/bash
-# restore.sh - 数据恢复脚本
+# restore.sh - Data restore script
 
 BACKUP_FILE=$1
 
@@ -369,13 +369,13 @@ if [ -z "$BACKUP_FILE" ]; then
     exit 1
 fi
 
-# 复制备份文件到容器
+# Copy backup file to container
 docker cp $BACKUP_FILE flexi-mongo-primary:/data/
 
-# 解压备份
+# Extract backup
 docker exec flexi-mongo-primary tar -xzf /data/$(basename $BACKUP_FILE) -C /data/
 
-# 恢复数据库
+# Restore database
 docker exec flexi-mongo-primary mongorestore \
   --db flexiwan \
   --drop \
@@ -384,132 +384,132 @@ docker exec flexi-mongo-primary mongorestore \
 echo "Restore completed from: $BACKUP_FILE"
 ```
 
-## 监控和维护
+## Monitoring and Maintenance
 
-### 1. 健康监控
+### 1. Health Monitoring
 ```bash
 #!/bin/bash
-# health-check.sh - 系统健康检查
+# health-check.sh - System health check
 
 echo "=== FlexiManage Health Check ==="
 echo "Date: $(date)"
 
-# 检查容器状态
+# Check container status
 echo -e "\n1. Container Status:"
 docker compose ps
 
-# 检查 API 健康
+# Check API health
 echo -e "\n2. API Health:"
 curl -s -k https://localhost:3443/api/health | jq .
 
-# 检查数据库状态
+# Check database status
 echo -e "\n3. Database Status:"
 docker exec flexi-mongo-primary mongo --eval "db.runCommand('ping')" --quiet
 
-# 检查磁盘空间
+# Check disk space
 echo -e "\n4. Disk Usage:"
 df -h | grep -E "(Filesystem|/dev/)"
 
-# 检查内存使用
+# Check memory usage
 echo -e "\n5. Memory Usage:"
 free -h
 ```
 
-### 2. 自动化维护
+### 2. Automated Maintenance
 ```bash
-# crontab 定时任务示例
+# crontab scheduled tasks example
 
-# 每天凌晨 2 点备份数据库
+# Backup database daily at 2 AM
 0 2 * * * /opt/fleximanage/scripts/backup.sh
 
-# 每周日凌晨 3 点清理旧日志
+# Clean old logs every Sunday at 3 AM
 0 3 * * 0 /opt/fleximanage/scripts/cleanup-logs.sh
 
-# 每小时检查系统健康
+# Check system health every hour
 0 * * * * /opt/fleximanage/scripts/health-check.sh >> /var/log/fleximanage-health.log
 ```
 
-## 升级指南
+## Upgrade Guide
 
-### 1. 应用升级
+### 1. Application Upgrade
 ```bash
 #!/bin/bash
-# upgrade.sh - 应用升级脚本
+# upgrade.sh - Application upgrade script
 
 echo "Starting FlexiManage upgrade..."
 
-# 1. 备份当前数据
+# 1. Backup current data
 ./scripts/backup.sh
 
-# 2. 拉取最新代码
+# 2. Pull latest code
 git pull origin main
 
-# 3. 重新构建镜像
+# 3. Rebuild images
 docker compose build --no-cache backend
 
-# 4. 滚动更新服务
+# 4. Rolling update services
 docker compose up -d --no-deps backend
 
-# 5. 验证升级
+# 5. Verify upgrade
 sleep 30
 curl -s -k https://localhost:3443/api/health
 
 echo "Upgrade completed!"
 ```
 
-### 2. 数据库升级
+### 2. Database Upgrade
 ```bash
-# 运行数据库迁移
+# Run database migrations
 docker exec flexi-backend npm run migrate
 
-# 检查数据库版本
+# Check database version
 docker exec flexi-mongo-primary mongo flexiwan --eval "db.schema_version.find()"
 ```
 
-## 安全配置
+## Security Configuration
 
-### 1. 生产环境安全
+### 1. Production Environment Security
 ```bash
-# 生产环境安全配置
+# Production environment security configuration
 NODE_ENV=production
 JWT_SECRET=$(openssl rand -hex 64)
 DEVICE_SECRET_KEY=$(openssl rand -hex 32)
 
-# 启用 HTTPS
+# Enable HTTPS
 SSL_ENABLED=true
 SSL_CERT_PATH=/app/certs/certificate.pem
 SSL_KEY_PATH=/app/certs/private.key
 
-# 数据库认证
+# Database authentication
 MONGO_AUTH_ENABLED=true
 MONGO_USERNAME=flexiwan_admin
 MONGO_PASSWORD=$(openssl rand -base64 32)
 
-# Redis 密码
+# Redis password
 REDIS_PASSWORD=$(openssl rand -base64 32)
 ```
 
-### 2. 防火墙配置
+### 2. Firewall Configuration
 ```bash
-# UFW 防火墙规则示例
+# UFW firewall rules example
 sudo ufw allow 22/tcp    # SSH
 sudo ufw allow 3443/tcp  # HTTPS API
-sudo ufw deny 3000/tcp   # 拒绝 HTTP (生产环境)
-sudo ufw deny 27017:27019/tcp  # 拒绝直接数据库访问
+sudo ufw deny 3000/tcp   # Deny HTTP (production environment)
+sudo ufw deny 27017:27019/tcp  # Deny direct database access
 ```
 
 ---
 
-## 总结
+## Summary
 
-FlexiManage Docker 部署提供了完整的 SD-WAN 管理平台解决方案。通过本指南，您可以：
+FlexiManage Docker deployment provides a complete SD-WAN management platform solution. Through this guide, you can:
 
-1. **快速部署**: 使用 Docker Compose 一键部署完整系统
-2. **开发调试**: 支持代码热重载和实时调试
-3. **生产部署**: 提供生产级别的配置和安全设置
-4. **运维管理**: 包含监控、备份、升级等运维工具
+1. **Quick Deployment**: One-click deployment of complete system using Docker Compose
+2. **Development & Debugging**: Support for code hot reload and real-time debugging
+3. **Production Deployment**: Provide production-level configuration and security settings
+4. **Operations Management**: Include monitoring, backup, upgrade and other operational tools
 
-如需技术支持，请参考：
+For technical support, please refer to:
 - **GitHub Issues**: https://github.com/Miwide-Info/fleximanage/issues
-- **技术文档**: 项目根目录下的 `TECHNICAL_GUIDE.md`
-- **操作手册**: 项目根目录下的 `OPERATIONS_GUIDE.md`
+- **Technical Documentation**: `TECHNICAL_GUIDE.md` in project root directory
+- **Operations Manual**: `OPERATIONS_GUIDE.md` in project root directory

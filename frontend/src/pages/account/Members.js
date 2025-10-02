@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, {  // Initialize with both states so interface clearly shows "All Status" // Initialize with both states so interface clearly shows "All Status" instead of relying on empty array semanticsuseEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 
 // Simple Members listing page. Fetches /members and displays basic columns.

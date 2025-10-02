@@ -668,7 +668,7 @@ router.route('/login')
         }
       }
 
-      // 强制查一次数据库，确保 admin 字段是最新
+      // Force database query to ensure admin field is up-to-date
 
       const freshUser = await User.findById(req.user._id)
         .populate('defaultOrg')
@@ -676,10 +676,10 @@ router.route('/login')
       if (!freshUser) {
         return next(createError(401, 'User not found'));
       }
-      // 强制保证 admin 字段为 Boolean
+      // Force admin field to be Boolean
       freshUser.admin = !!freshUser.admin;
       req.user = freshUser;
-      // 打印日志辅助调试
+      // Print log for debugging assistance
       console.log('freshUser.admin:', freshUser.admin);
       console.log('req.user.admin:', req.user.admin);
 
