@@ -1,12 +1,109 @@
-# flexiWAN Official Repository
+# FlexiManage - Open Source SD-WAN Management Platform
 
-The official respository for flexiwan is in https://gitlab.com/flexiwangroup
+FlexiManage 是一个功能强大的开源 SD-WAN 管理平台，提供设备管理、网络配置、用户认证等核心功能。本项目基于 flexiWAN 开源项目，增强了功能并优化了用户体验。
 
-# About flexiWAN
+## 🚀 快速开始
 
-flexiWAN is the world's first open source [SD-WAN](https://flexiwan.com/). flexiWAN offers a complete SD-WAN solution comprising of flexiEdge (the edge router) and flexiManage (the central management system) with core SD-WAN functionality. Our mission is to democratize the SD-WAN Market through an open source & modular  SD-WAN solution lowering barriers to entry for companies to adopt it or offer services based on the flexiWAN SD-WAN solution. To learn more about the flexiWAN's unique approach to networking, visit the [flexiWAN](https://flexiwan.com/) website, and follow the company on [Twitter](https://twitter.com/FlexiWan) and [LinkedIn](https://www.linkedin.com/company/flexiwan).
+FlexiManage 现在支持 Docker 容器化部署，让您能够快速启动完整的 SD-WAN 管理环境。
 
-To contact us please drop us an email at yourfriends@flexiwan.com, or for any general issue please use our [Google User Group](https://groups.google.com/a/flexiwan.com/forum/#!forum/flexiwan-users)
+```bash
+# 克隆项目
+git clone https://github.com/Miwide-Info/fleximanage.git
+cd fleximanage
+
+# Docker 开发环境
+docker compose -f docker-compose.dev.yml up -d
+
+# 访问管理界面
+https://manage.miwide.com:3443
+```
+
+## 📚 文档导航
+
+我们提供了完整的文档体系来帮助您使用和开发 FlexiManage：
+
+### 核心文档
+- **[技术指南](TECHNICAL_GUIDE.md)** - 系统架构、API 参考、数据库设计
+- **[开发文档](DEVELOPMENT_GUIDE.md)** - 开发环境、代码规范、测试指南  
+- **[Docker 使用指南](DOCKER_USAGE_GUIDE.md)** - 容器部署、环境配置、故障排除
+- **[操作指南](OPERATIONS_GUIDE.md)** - 系统管理、监控、维护
+
+### 项目信息
+- **[开发进展](DEVELOPMENT_PROGRESS.md)** - 功能实现、技术决策、里程碑
+- **[项目状态](PROJECT_STATUS.md)** - 当前状态、路线图、贡献指南
+
+## ✨ 主要特性
+
+### 🏗️ 系统架构
+- **微服务架构**: Node.js + Express + MongoDB + Redis
+- **容器化部署**: Docker Compose 编排，支持开发和生产环境
+- **高可用设计**: MongoDB 副本集、Redis 缓存、负载均衡
+- **安全认证**: JWT 令牌、HTTPS、CORS 保护
+
+### 🎯 核心功能
+- **设备管理**: 设备注册、状态监控、配置管理
+- **用户管理**: 多租户支持、权限控制、组织管理
+- **网络配置**: 接口配置、策略管理、隧道建立
+- **监控告警**: 实时监控、日志记录、性能分析
+
+### 🔧 开发体验
+- **现代化 UI**: React 18 + Bootstrap 5
+- **API 优先**: OpenAPI 3.0 规范、RESTful 设计
+- **开发工具**: 热重载、代码检查、自动测试
+- **调试支持**: 详细日志、错误追踪、性能分析
+
+## 🛠️ 技术栈
+
+### 后端
+- Node.js 18 + Express 4
+- MongoDB 4.4 (副本集)
+- Redis 7.x (缓存)
+- JWT 认证
+- OpenAPI 3.0
+
+### 前端  
+- React 18
+- React Router 6
+- Bootstrap 5
+- Axios
+
+### 基础设施
+- Docker & Docker Compose
+- Nginx (生产环境)
+- SSL/TLS 加密
+- 系统监控
+
+## 🚀 部署方式
+
+### Docker 部署 (推荐)
+```bash
+# 开发环境
+docker compose -f docker-compose.dev.yml up -d
+
+# 生产环境
+docker compose up -d
+```
+
+### 手动部署
+```bash
+# 安装依赖
+cd backend && npm install
+cd ../frontend && npm install && npm run build
+
+# 启动服务
+cd backend && npm start
+```
+
+详细的部署指南请参考 [Docker 使用指南](DOCKER_USAGE_GUIDE.md)。
+
+## 💡 关于 flexiWAN
+
+flexiWAN 是世界首个开源 [SD-WAN](https://flexiwan.com/) 解决方案。flexiWAN 提供包含 flexiEdge（边缘路由器）和 flexiManage（中央管理系统）的完整 SD-WAN 解决方案，具备核心 SD-WAN 功能。
+
+- 官方网站：[flexiWAN](https://flexiwan.com/)
+- 托管服务：[manage.flexiwan.com](https://manage.flexiwan.com)
+- 社区支持：[Google User Group](https://groups.google.com/a/flexiwan.com/forum/#!forum/flexiwan-users)
+- 联系方式：yourfriends@flexiwan.com
 
 # flexiManage
 
@@ -219,17 +316,49 @@ If a user document has `admin: true`, the system returns a dynamically generated
 User permissions are cached in-memory for 30 seconds (keyed by userId + defaultAccount + defaultOrg). A helper `invalidateUserPermissions(userId)` is exported for future hooks after membership changes.
 
 
-### Documentation
-For full documentation of flexiManage, please refer to [flexiManage documentation](https://docs.flexiwan.com/management/management-login.html).
+## 🤝 贡献指南
 
-## Versioning
+我们欢迎社区贡献！请查看 [开发文档](DEVELOPMENT_GUIDE.md) 了解开发环境搭建和代码规范。
 
-FlexiManage uses [SemVer](https://semver.org/) scheme for versioning.
+### 开发工作流
+1. Fork 项目并创建功能分支
+2. 编写代码和测试
+3. 确保通过所有检查
+4. 提交 Pull Request
 
-## License
+### 问题报告
+- 使用 GitHub Issues 报告 bug
+- 提供详细的复现步骤
+- 包含系统环境信息
 
-This project is licensed under the GNU AGPLv3 License - see the [LICENSE.md](https://gitlab.com/flexiwangroup/fleximanage/blob/master/LICENSE) file for details
+## 📈 项目状态
 
-## Other Open Source Used
+- ✅ **核心功能**: 设备管理、用户认证、API 服务
+- ✅ **容器化**: Docker 部署和开发环境
+- ✅ **文档**: 完整的技术和开发文档
+- 🔄 **持续改进**: 性能优化、功能增强
 
-This project uses other Open Source components listed [here](https://gitlab.com/flexiwangroup/fleximanage/blob/master/OPENSOURCE.md).
+详细状态请查看 [项目状态](PROJECT_STATUS.md)。
+
+## 📞 支持与联系
+
+- **项目文档**: 参考上方文档导航
+- **问题报告**: GitHub Issues
+- **功能建议**: GitHub Discussions
+- **社区支持**: [flexiWAN User Group](https://groups.google.com/a/flexiwan.com/forum/#!forum/flexiwan-users)
+
+## 📄 版本管理
+
+FlexiManage 使用 [SemVer](https://semver.org/) 语义化版本控制。
+
+## 🔐 许可证
+
+本项目基于 GNU AGPLv3 许可证开源 - 详见 [LICENSE](LICENSE) 文件。
+
+## 🙏 开源组件
+
+本项目使用的开源组件列表请参考 [OPENSOURCE.md](OPENSOURCE.md)。
+
+---
+
+**FlexiManage** - 让 SD-WAN 管理更简单、更强大、更开放 🌐

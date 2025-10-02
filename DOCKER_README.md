@@ -1,145 +1,119 @@
-# FlexiManage Docker Setup
+# FlexiManage Docker 快速指南
 
-This repository contains a complete Docker Compose setup for running FlexiManage, an open-source SD-WAN management system.
+本文档提供 FlexiManage Docker 容器化部署的快速指南。更详细的信息请参考 [Docker 使用指南](DOCKER_USAGE_GUIDE.md)。
 
-## Quick Start
+## 🚀 快速启动
 
-1. **Prerequisites:**
-   - Docker and Docker Compose
-   - At least 4GB of RAM
-   - Ports 3000, 3443, 6380, 8025, 1026, 27017-27019 available
+### 系统要求
+- Docker 20.10+ 和 Docker Compose 2.0+
+- 至少 4GB 内存
+- 可用端口：3000, 3443, 6380, 8025, 1026, 27017-27019
 
-2. **Start the services:**
+### 启动步骤
+
+1. **克隆项目**
    ```bash
-   ./start.sh
+   git clone https://github.com/Miwide-Info/fleximanage.git
+   cd fleximanage
    ```
 
-   Or manually:
+2. **启动服务**
    ```bash
+   # 使用启动脚本
+   ./start.sh
+   
+   # 或手动启动
    docker compose up -d
    ```
 
-3. **Access the services:**
-   - **FlexiManage UI (HTTP)**: http://localhost:3000 (redirects to HTTPS)
-   - **FlexiManage UI (HTTPS)**: https://localhost:3443
-   - **SMTP4Dev Web UI**: http://localhost:8025
-   - **MongoDB Primary**: mongodb://localhost:27017
-   - **Redis**: redis://localhost:6380
+3. **访问应用**
+   - **管理界面**: https://manage.miwide.com:3443
+   - **邮件调试**: http://localhost:8025
+   - **数据库**: mongodb://localhost:27017
 
-## Services
+## 🛠️ 开发环境
 
-### Backend (Node.js/Express)
-- **Ports**: 3000 (HTTP), 3443 (HTTPS)
-- **Health check**: http://localhost:3000/api/health
-- **API docs**: https://localhost:3443/api-docs
+开发环境提供热重载和调试支持：
 
-### Frontend (React)
-- Built and served by the backend
-- Modern React 18 application
-- Bootstrap 5 UI components
-
-### MongoDB Replica Set
-- **Primary**: localhost:27017
-- **Secondary 1**: localhost:27018  
-- **Secondary 2**: localhost:27019
-- **Replica Set Name**: rs
-- No authentication (development setup)
-
-### Redis
-- **Port**: 6380 (to avoid conflict with system Redis)
-- Used for session management and caching
-
-### SMTP4Dev (Email Testing)
-- **SMTP Port**: 1026
-- **Web UI**: http://localhost:8025
-- Captures all outgoing emails for testing
-
-## User Registration
-
-1. **Register a new user:**
-   ```bash
-   curl -X POST -k "https://localhost:3443/api/users/register" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "accountName": "testaccount",
-       "userFirstName": "Test",
-       "userLastName": "User",
-       "email": "test@example.com",
-       "password": "testpassword",
-       "userJobTitle": "Admin",
-       "userPhoneNumber": "",
-       "country": "US",
-       "companySize": "0-10",
-       "serviceType": "Provider",
-       "numberSites": "10",
-       "companyType": "",
-       "companyDesc": "",
-       "captcha": ""
-     }'
-   ```
-
-2. **Check for verification email:**
-   - Open http://localhost:8025
-   - Find the verification email
-   - Extract the `id` and `token` parameters from the verification link
-
-3. **Verify account:**
-   ```bash
-   curl -X POST -k "https://localhost:3443/api/users/verify-account" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "id": "<id_from_email>",
-       "token": "<token_from_email>"
-     }'
-   ```
-
-4. **Login:**
-   ```bash
-   curl -X POST -sD - -k "https://localhost:3443/api/users/login" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "username": "test@example.com",
-       "password": "testpassword",
-       "captcha": ""
-     }'
-   ```
-
-## Management Commands
-
-### View logs
 ```bash
-docker compose logs -f                    # All services
-docker compose logs -f backend           # Backend only
-docker compose logs -f mongo-primary     # MongoDB primary
+# 启动开发环境
+docker compose -f docker-compose.dev.yml up -d
+
+# 查看日志
+docker compose logs -f backend
 ```
 
-### Service management
+## 📋 服务组件
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| **Backend** | 3000, 3443 | Node.js API 服务 |
+| **MongoDB** | 27017-27019 | 数据库副本集 |
+| **Redis** | 6380 | 缓存服务 |
+| **SMTP4Dev** | 1026, 8025 | 邮件测试工具 |
+
+### 健康检查
 ```bash
-docker compose ps                        # Check status
-docker compose restart backend          # Restart backend
-docker compose down                      # Stop all services
-docker compose down -v                  # Stop and remove volumes
+# API 健康状态
+curl -k https://localhost:3443/api/health
+
+# 数据库连接
+docker exec mongo-primary mongosh --eval "rs.status()"
 ```
 
-### Database access
-```bash
-# Connect to MongoDB primary
-docker exec -it flexi-mongo-primary mongo
+## 👤 用户注册
 
-# Connect to Redis
-docker exec -it flexi-redis redis-cli
+### Web 界面注册 (推荐)
+1. 访问 https://manage.miwide.com:3443
+2. 点击"注册"按钮
+3. 填写表单信息
+4. 在 http://localhost:8025 查看验证邮件
+5. 点击验证链接完成注册
+
+### API 注册
+```bash
+# 注册用户
+curl -X POST -k "https://localhost:3443/api/users/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accountName": "testaccount",
+    "userFirstName": "Test",
+    "userLastName": "User",
+    "email": "test@example.com",
+    "password": "testpassword",
+    "country": "US",
+    "serviceType": "Provider"
+  }'
+
+# 查看验证邮件：http://localhost:8025
+# 验证账户
+curl -X POST -k "https://localhost:3443/api/users/verify-account" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "<id>", "token": "<token>"}'
 ```
 
-## Development
+## 🔧 管理命令
 
-### Rebuild after code changes
+### 日志查看
 ```bash
-docker compose up --build -d backend
+docker compose logs -f backend          # 后端日志
+docker compose logs -f mongo-primary    # 数据库日志
 ```
 
-### Access container shell
+### 服务管理
 ```bash
+docker compose ps                       # 服务状态
+docker compose restart backend         # 重启后端
+docker compose down                     # 停止服务
+```
+
+### 容器访问
+```bash
+# 后端容器
 docker exec -it flexi-backend sh
+
+# 数据库
+docker exec -it flexi-mongo-primary mongosh
 ```
 
 ### Environment Variables
@@ -174,58 +148,35 @@ The backend expects SSL certificates in `backend/bin/cert.local.flexiwan.com/`:
 
 For development, the system will work with HTTP on port 3000, but HTTPS is preferred.
 
-## Troubleshooting
+## 🔍 故障排除
 
-### Backend keeps restarting
+### 常见问题
 ```bash
+# 后端无法启动
 docker compose logs backend
-```
-Common issues:
-- Missing SSL certificates (non-fatal, HTTP still works)
-- MongoDB connection issues
-- Missing dependencies
 
-### MongoDB connection errors
-- Ensure all 3 MongoDB containers are healthy: `docker compose ps`
-- Check replica set status: `docker exec flexi-mongo-primary mongo --eval "rs.status()"`
+# 数据库连接失败
+docker compose ps
+docker exec flexi-mongo-primary mongosh --eval "rs.status()"
 
-### Port conflicts
-If ports are in use, modify the port mappings in `docker-compose.yml`:
-```yaml
-ports:
-  - "3001:3000"  # Change host port
-  - "3444:3443"
+# 端口冲突
+# 修改 docker-compose.yml 中的端口映射
 ```
 
-### Reset everything
+### 重置环境
 ```bash
 docker compose down -v
 docker system prune -f
 ./start.sh
 ```
 
-## Production Considerations
+## 📖 更多文档
 
-This setup is intended for development and testing. For production:
+- **[完整 Docker 指南](DOCKER_USAGE_GUIDE.md)** - 详细的部署和配置说明
+- **[开发文档](DEVELOPMENT_GUIDE.md)** - 开发环境和代码规范
+- **[技术指南](TECHNICAL_GUIDE.md)** - 系统架构和 API 文档
+- **[操作指南](OPERATIONS_GUIDE.md)** - 系统管理和维护
 
-1. **Security:**
-   - Enable MongoDB authentication
-   - Use proper SSL certificates
-   - Set strong passwords and secrets
-   - Configure firewall rules
+## 📄 许可证
 
-2. **Performance:**
-   - Increase MongoDB oplog size
-   - Configure proper resource limits
-   - Use persistent storage volumes
-   - Set up monitoring
-
-3. **High Availability:**
-   - Deploy across multiple hosts
-   - Configure load balancing
-   - Set up automated backups
-   - Monitor service health
-
-## License
-
-This project follows the same license as the original FlexiManage project.
+本项目遵循 FlexiManage 原项目的开源许可证。
