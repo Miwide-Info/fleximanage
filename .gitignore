@@ -70,5 +70,25 @@ dist/
 *.bak
 *.tmp
 
+# SSL certificates and keys (sensitive)
+backend/bin/cert.*/
+*.pem
+*.key
+
+# Temporary authentication files
+jwt_token.txt
+cookies.txt
+
+# Development and debugging scripts
+**/fix-*.js
+**/test-*.js
+**/diagnose-*.js
+**/complete-fix.js
+**/emergency-fix.js
+**/clean-*.js
+**/minimal-fix.js
+**/register-device.js
+runtime-fix.js
+create_token.js
 
 # (Removed) legacy experimental frontend-react/ directory cleaned up
