@@ -53,21 +53,31 @@ const DeviceInfo = () => {
   const fetchDeviceInfo = async (forceRefresh = false) => {
     try {
       const url = `/api/devices/${deviceId}${forceRefresh ? '?refresh=' + Date.now() : ''}`;
+      console.log('🔍 Fetching device info from:', url);
+      
       const response = await apiCall(url, {
         method: 'GET',
         headers: forceRefresh ? { 'Cache-Control': 'no-cache' } : {}
       });
 
+      console.log('📡 API Response status:', response?.status);
+      console.log('📡 API Response headers:', response?.headers);
+
       if (!response) {
+        console.error('❌ No response received from API');
+        setError('Failed to fetch device information');
         setLoading(false);
         return;
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ API Error:', response.status, errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('✅ Successfully received API data:', data);
       
       // Handle array response - get the first device
       const deviceData = Array.isArray(data) ? data[0] : data;
