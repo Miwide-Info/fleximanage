@@ -356,10 +356,6 @@ const DeviceInfo = () => {
         return (
           <div>
             <h5><FaNetworkWired className="me-2" />Interfaces Configuration</h5>
-            <div className="alert alert-success mb-3">
-              <strong>� 设备Agent数据 (Oct 3, 2025):</strong> 界面已准备好显示设备agent实时反馈的接口配置数据
-            </div>
-            <p className="text-muted mb-3">Configure network interface settings and routing protocols for {device?.hostname || 'this device'}</p>
             
             <div className="d-flex justify-content-between align-items-center mb-3">
               <div>
