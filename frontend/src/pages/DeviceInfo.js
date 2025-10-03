@@ -384,13 +384,20 @@ const DeviceInfo = () => {
                   <thead className="table-dark">
                     <tr>
                       <th>Name</th>
-                      <th>MAC</th>
-                      <th>DHCP/Static</th>
+                      <th>Type</th>
+                      <th>Assigned</th>
                       <th>IPv4</th>
                       <th>GW</th>
-                      <th>DNS Servers</th>
                       <th>Metric</th>
-                      <th>Link Status</th>
+                      <th>Public IP</th>
+                      <th>Path Labels</th>
+                      <th>Routing</th>
+                      <th>DHCP/Static</th>
+                      <th>MAC</th>
+                      <th>MTU</th>
+                      <th>QoS</th>
+                      <th>IPv6</th>
+                      <th>Description</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -398,10 +405,14 @@ const DeviceInfo = () => {
                     {device.interfaces.map((iface, index) => (
                       <tr key={index}>
                         <td><strong>{iface.name || `eth${index}`}</strong></td>
-                        <td><code>{iface.MAC || '-'}</code></td>
                         <td>
-                          <Badge bg={iface.dhcp === 'yes' ? 'primary' : 'secondary'}>
-                            {iface.dhcp === 'yes' ? 'DHCP' : 'Static'}
+                          <Badge bg={iface.type === 'WAN' ? 'primary' : iface.type === 'LAN' ? 'success' : 'secondary'}>
+                            {iface.type || 'N/A'}
+                          </Badge>
+                        </td>
+                        <td>
+                          <Badge bg={iface.isAssigned ? 'success' : 'secondary'}>
+                            {iface.isAssigned ? 'Yes' : 'No'}
                           </Badge>
                         </td>
                         <td>
@@ -419,17 +430,6 @@ const DeviceInfo = () => {
                           )}
                         </td>
                         <td>
-                          {Array.isArray(iface.dnsServers) && iface.dnsServers.length > 0 ? (
-                            <div style={{fontSize: '0.8rem'}}>
-                              {iface.dnsServers.map((dns, i) => (
-                                <div key={i}>{dns}</div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td>
                           {iface.metric ? (
                             <Badge bg="warning" text="dark">{iface.metric}</Badge>
                           ) : (
@@ -437,15 +437,61 @@ const DeviceInfo = () => {
                           )}
                         </td>
                         <td>
-                          <Badge bg={
-                            (iface.linkStatus === 'up' || iface.linkStatus === 'Up') ? 'success' : 
-                            (iface.linkStatus === 'down' || iface.linkStatus === 'Down') ? 'danger' : 'secondary'
-                          }>
-                            {iface.linkStatus ? 
-                              (iface.linkStatus.charAt(0).toUpperCase() + iface.linkStatus.slice(1).toLowerCase()) : 
-                              '未知'
-                            }
+                          {iface.PublicIP ? (
+                            <code>{iface.PublicIP}</code>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td>
+                          {Array.isArray(iface.pathlabels) && iface.pathlabels.length > 0 ? (
+                            <div style={{fontSize: '0.8rem'}}>
+                              {iface.pathlabels.map((label, i) => (
+                                <Badge key={i} bg="info" className="me-1 mb-1">{label}</Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td>
+                          <Badge bg={iface.routing === 'OSPF' ? 'warning' : iface.routing === 'BGP' ? 'info' : 'secondary'}>
+                            {iface.routing || 'NONE'}
                           </Badge>
+                        </td>
+                        <td>
+                          <Badge bg={iface.dhcp === 'yes' ? 'primary' : 'secondary'}>
+                            {iface.dhcp === 'yes' ? 'DHCP' : 'Static'}
+                          </Badge>
+                        </td>
+                        <td><code>{iface.MAC || '-'}</code></td>
+                        <td>
+                          {iface.mtu ? (
+                            <Badge bg="secondary">{iface.mtu}</Badge>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td>
+                          {iface.qosPolicy ? (
+                            <Badge bg="primary">{iface.qosPolicy}</Badge>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td>
+                          {iface.IPv6 ? (
+                            <code>{iface.IPv6}{iface.IPv6Mask ? `/${iface.IPv6Mask}` : ''}</code>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td>
+                          {iface.description ? (
+                            <span>{iface.description}</span>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
                         </td>
                         <td>
                           <Button 
@@ -526,13 +572,20 @@ const DeviceInfo = () => {
                   <thead className="table-dark">
                     <tr>
                       <th>Name</th>
-                      <th>MAC</th>
-                      <th>DHCP/Static</th>
+                      <th>Type</th>
+                      <th>Assigned</th>
                       <th>IPv4</th>
                       <th>GW</th>
-                      <th>DNS Servers</th>
                       <th>Metric</th>
-                      <th>Link Status</th>
+                      <th>Public IP</th>
+                      <th>Path Labels</th>
+                      <th>Routing</th>
+                      <th>DHCP/Static</th>
+                      <th>MAC</th>
+                      <th>MTU</th>
+                      <th>QoS</th>
+                      <th>IPv6</th>
+                      <th>Description</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -585,10 +638,14 @@ const DeviceInfo = () => {
                     ].map((iface, index) => (
                       <tr key={index}>
                         <td><strong>{iface.name}</strong></td>
-                        <td><code>{iface.MAC}</code></td>
                         <td>
-                          <Badge bg={iface.dhcp === 'yes' ? 'primary' : 'secondary'}>
-                            {iface.dhcp === 'yes' ? 'DHCP' : 'Static'}
+                          <Badge bg={index === 1 ? 'primary' : 'success'}>
+                            {index === 1 ? 'WAN' : 'LAN'}
+                          </Badge>
+                        </td>
+                        <td>
+                          <Badge bg="secondary">
+                            No
                           </Badge>
                         </td>
                         <td>
@@ -606,17 +663,6 @@ const DeviceInfo = () => {
                           )}
                         </td>
                         <td>
-                          {Array.isArray(iface.dnsServers) && iface.dnsServers.length > 0 ? (
-                            <div style={{fontSize: '0.8rem'}}>
-                              {iface.dnsServers.map((dns, i) => (
-                                <div key={i}>{dns}</div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td>
                           {iface.metric ? (
                             <Badge bg="warning" text="dark">{iface.metric}</Badge>
                           ) : (
@@ -624,9 +670,33 @@ const DeviceInfo = () => {
                           )}
                         </td>
                         <td>
-                          <Badge bg={iface.linkStatus === 'Up' ? 'success' : 'secondary'}>
-                            {iface.linkStatus}
+                          <span className="text-muted">-</span>
+                        </td>
+                        <td>
+                          <span className="text-muted">-</span>
+                        </td>
+                        <td>
+                          <Badge bg="secondary">
+                            NONE
                           </Badge>
+                        </td>
+                        <td>
+                          <Badge bg={iface.dhcp === 'yes' ? 'primary' : 'secondary'}>
+                            {iface.dhcp === 'yes' ? 'DHCP' : 'Static'}
+                          </Badge>
+                        </td>
+                        <td><code>{iface.MAC}</code></td>
+                        <td>
+                          <Badge bg="secondary">1500</Badge>
+                        </td>
+                        <td>
+                          <span className="text-muted">-</span>
+                        </td>
+                        <td>
+                          <span className="text-muted">-</span>
+                        </td>
+                        <td>
+                          <span className="text-muted">-</span>
                         </td>
                         <td>
                           <Button variant="outline-primary" size="sm" className="me-1" title="Edit">
