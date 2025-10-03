@@ -841,21 +841,6 @@ const DeviceInfo = () => {
       >
         <Tab eventKey="general" title={<><FaServer className="me-1" />General</>}>
           
-          {/* 设备连接状态检查 */}
-          {device && !device.isConnected && (
-            <Alert variant="warning" className="mb-3">
-              <Alert.Heading>⚠️ 设备离线</Alert.Heading>
-              <p>
-                设备 <strong>{device.name}</strong> (ID: {device.machineId}) 当前未连接到 FlexiManage 服务器。
-              </p>
-              <div className="d-flex gap-2">
-                <Button variant="outline-primary" size="sm" onClick={() => fetchDeviceInfo(true)}>
-                  <FaSync className="me-1" />刷新状态
-                </Button>
-              </div>
-            </Alert>
-          )}
-          
           <Row>
             <Col md={12}>
               <Card className="mb-4">
