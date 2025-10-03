@@ -128,15 +128,7 @@ const DeviceInfo = () => {
     }
   };
 
-  const getStatusBadge = (approvedStatus) => {
-    const variants = {
-      'Approved': 'success',
-      'Pending': 'warning',
-      'Rejected': 'danger'
-    };
-    const statusText = approvedStatus ? 'Approved' : 'Pending';
-    return <Badge bg={variants[statusText] || 'secondary'}>{statusText}</Badge>;
-  };
+
 
   const getConnectionBadge = (connection) => {
     const variants = {
@@ -799,18 +791,14 @@ const DeviceInfo = () => {
         <Row className="align-items-center">
           <Col md={8}>
             <h2><FaServer className="me-2" />{deviceName || device?.name || 'Unknown Device'}</h2>
-            <p className="text-muted mb-2">{description || device?.description || 'No description available'}</p>
+            {(description || device?.description) && (
+              <p className="text-muted mb-2">{description || device?.description}</p>
+            )}
             <div className="device-badges">
-              {getStatusBadge(isApproved)}
-              {' '}
               {getConnectionBadge(device?.isConnected)}
             </div>
           </Col>
           <Col md={4} className="text-end">
-            <div className="device-id-info">
-              <small className="text-muted">Device ID</small>
-              <div className="font-monospace">{device?._id}</div>
-            </div>
           </Col>
         </Row>
       </div>
@@ -900,7 +888,7 @@ const DeviceInfo = () => {
                           <Form.Check
                             type="switch"
                             id="approved-switch"
-                            label={isApproved ? 'Approved' : 'Pending'}
+                            label={isApproved ? 'Approved' : 'Not Approved'}
                             checked={isApproved}
                             onChange={(e) => setIsApproved(e.target.checked)}
                             className="custom-switch"
@@ -977,8 +965,8 @@ const DeviceInfo = () => {
                       <div className="info-display-item">
                         <Form.Label><strong>Router Status:</strong></Form.Label>
                         <div className="mt-2">
-                          <Badge bg={isApproved ? 'success' : 'warning'} className="fs-6">
-                            {isApproved ? 'Approved' : 'Pending'}
+                          <Badge bg={isApproved ? 'success' : 'danger'} className="fs-6">
+                            {isApproved ? 'Approved' : 'Not Approved'}
                           </Badge>
                         </div>
                       </div>
