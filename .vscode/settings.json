@@ -22,4 +22,16 @@
     "remote.SSH.configFile": "C:\\fleximanage\\ssh_config_manage",
 	"remote.SSH.path": "C:\\Windows\\System32\\OpenSSH\\ssh.exe",
 	"CodeGPT.apiKey": "Google AI Studio",
+	
+	// Terminal settings to disable idle detection prompts and confirmations
+	"terminal.integrated.enablePersistentSessions": false,
+	"terminal.integrated.persistentSessionReviveProcess": "never",
+	"terminal.integrated.showExitAlert": false,
+	"terminal.integrated.confirmOnExit": "never",
+	"terminal.integrated.confirmOnKill": "never",
+	"terminal.integrated.enableVisualBell": false,
+	"terminal.integrated.detectLocale": "off",
+	"terminal.integrated.automationProfile.linux": null,
+	"terminal.integrated.automationProfile.osx": null,
+	"terminal.integrated.automationProfile.windows": null,
 }

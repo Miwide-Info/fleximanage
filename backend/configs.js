@@ -60,9 +60,9 @@ const configEnv = {
   // This is the default configuration, override by the following sections
   default: {
     // URL of the rest server
-    restServerUrl: [process.env.APP_URL || 'https://local.miwide.com:3443'],
+    restServerUrl: [process.env.APP_URL || 'https://manage.miwide.com:3443'],
     // URL of the UI server
-    uiServerUrl: [process.env.UI_URL || 'https://local.miwide.com:3000'],
+    uiServerUrl: [process.env.UI_URL || 'https://manage.miwide.com:3000'],
     // Key used for users tokens, override default with environment variable USER_SECRET_KEY
     userTokenSecretKey: process.env.JWT_SECRET || 'abcdefg1234567',
     // Whether to validate open API response. True for testing and dev, False for production,
@@ -107,7 +107,7 @@ const configEnv = {
     // Mongo VPN database
     mongoVpnUrl: process.env.MONGO_VPN_URI || `mongodb://${hostname}:27017,${hostname}:27018,${hostname}:27019/flexivpn?replicaSet=rs`,
     // Billing Redirect OK page url
-    billingRedirectOkUrl: 'https://local.miwide.com/ok.html',
+    billingRedirectOkUrl: 'https://manage.miwide.com/ok.html',
     // Biling config site - this is used as the billing site name in ChargeBee
     billingConfigSite: 'flexiwan-test',
     // ChargeBee default plan for a new customer
@@ -157,18 +157,18 @@ const configEnv = {
     // Certificate key location, under bin directory
     // On production if the key located in the Let's encrypt directory, it's possible to link to it using:
     // sudo ln -s /etc/letsencrypt/live/app.miwide.com/privkey.pem ~/FlexiWanSite/bin/cert.app.miwide.com/domain.key
-    httpsCertKey: '/cert.local.miwide.com/domain.key',
+    httpsCertKey: '/cert.manage.miwide.com/domain.key',
     // Certificate location, under bin directory
     // On production if the key located in the Let's encrypt directory, it's possible to link to it using:
     // sudo ln -s /etc/letsencrypt/live/app.miwide.com/fullchain.pem ~/FlexiWanSite/bin/cert.app.miwide.com/certificate.pem
-    httpsCert: '/cert.local.miwide.com/certificate.pem',
+    httpsCert: '/cert.manage.miwide.com/certificate.pem',
     // Default agent broker the device tries to create connection for
     // The broker is sent to the device when it registers.
     // It's possible to use multiple brokers in case of multiple domains, in that case
     // the system will use the last broker that matches the domain used in the token or the first broker if not found
     agentBroker: process.env.AGENT_BROKER ? process.env.AGENT_BROKER.split(',') : ['manage.miwide.com:3443'],
     // Whitelist of allowed domains for CORS checks
-    corsWhiteList: process.env.CORS_WHITELIST ? process.env.CORS_WHITELIST.split(',') : ['http://local.miwide.com:3000', 'https://local.miwide.com:3000', 'https://local.miwide.com:3443', 'https://manage.miwide.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
+    corsWhiteList: process.env.CORS_WHITELIST ? process.env.CORS_WHITELIST.split(',') : ['http://manage.miwide.com:3000', 'https://manage.miwide.com:3000', 'https://manage.miwide.com:3443', 'https://local.miwide.com:3443', 'https://127.0.0.1:3000', 'http://localhost:3000'],
   // Client static root directory (auto-detected: prefers production build if exists)
   clientStaticDir: detectedClientStaticDir,
     // Mgmt-Agent protocol version

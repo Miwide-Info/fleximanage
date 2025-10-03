@@ -15,6 +15,7 @@ import Organizations from './pages/Organizations';
 import AddOrganization from './pages/AddOrganization';
 import EditOrganization from './pages/EditOrganization';
 import Devices from './pages/Devices';
+import DeviceInfo from './pages/DeviceInfo';
 import Network from './pages/Network';
 import Tunnels from './pages/Tunnels';
 import Firewall from './pages/Firewall';
@@ -107,6 +108,7 @@ function App() {
           <Route path="/organizations/add" element={<Guard permKey="organizations" element={<AddOrganization />} />} />
           <Route path="/organizations/edit/:id" element={<Guard permKey="organizations" element={<EditOrganization />} />} />
           <Route path="/devices" element={<Guard permKey="devices" element={<Devices />} />} />
+          <Route path="/devices/:deviceId" element={<Guard permKey="devices" element={<DeviceInfo />} />} />
           <Route path="/network" element={<Guard permKey="organizations" element={<Network />} />} />
           <Route path="/tunnels" element={<Guard permKey="tunnels" element={<Tunnels />} />} />
           <Route path="/firewall" element={<Guard permKey="firewallpolicies" element={<Firewall />} />} />

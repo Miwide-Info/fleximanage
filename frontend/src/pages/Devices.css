@@ -6,33 +6,111 @@
   margin-bottom: 30px;
 }
 
+.bulk-actions-bar {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .action-buttons {
   display: flex;
-  gap: 5px;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .action-buttons .btn {
-  padding: 0.25rem 0.5rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.action-buttons .btn:disabled {
+  opacity: 0.6;
 }
 
 .device-card {
   background-color: #f8f9fa;
-  transition: box-shadow 0.2s ease;
+  transition: all 0.2s ease;
+  border: 1px solid #dee2e6;
 }
 
 .device-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #007bff;
+}
+
+.device-card .form-check-input:checked {
+  background-color: #007bff;
+  border-color: #007bff;
 }
 
 .device-stats div,
 .device-details div {
   margin-bottom: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .device-stats {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .device-details {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.device-details strong {
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Card header styling */
+.card-header {
+  background-color: #ffffff;
+  border-bottom: 2px solid #f1f3f4;
+}
+
+/* Link styling for device names */
+.device-card a {
+  color: #007bff;
+  transition: color 0.2s ease;
+}
+
+.device-card a:hover {
+  color: #0056b3;
+}
+
+/* Button group styling */
+.btn-group-vertical .btn {
+  border-radius: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.btn-group-vertical .btn:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bulk-actions-bar .btn-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .bulk-actions-bar .btn-group .btn {
+    margin-bottom: 0.25rem;
+  }
+  
+  .action-buttons {
+    margin-top: 1rem;
+  }
 }

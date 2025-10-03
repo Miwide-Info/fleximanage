@@ -1,32 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Badge, Card, Row, Col, Alert } from 'react-bootstrap';
+import { Table, Button, Badge, Card, Row, Col, Alert, Form, ButtonGroup } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaPlay, FaStop, FaSync, FaTrash, FaInfoCircle, FaServer } from 'react-icons/fa';
 import './Devices.css';
 
 const Devices = () => {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedDevices, setSelectedDevices] = useState(new Set());
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDevices();
   }, []);
 
+  // Helper function to handle API calls with authentication
+  const apiCall = async (url, options = {}) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return null;
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      navigate('/login');
+      return null;
+    }
+
+    return response;
+  };
+
   const fetchDevices = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found');
+      const response = await apiCall('/api/devices?response=detailed', {
+        method: 'GET'
+      });
+
+      if (!response) {
+        // Authentication failed, redirect already handled
         setLoading(false);
         return;
       }
-
-      const response = await fetch('/api/devices?response=detailed', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -85,6 +110,92 @@ const Devices = () => {
     return <Badge bg={variants[connection] || 'secondary'}>{connection}</Badge>;
   };
 
+  // Handle device selection
+  const handleDeviceSelect = (deviceId, isSelected) => {
+    const newSelection = new Set(selectedDevices);
+    if (isSelected) {
+      newSelection.add(deviceId);
+    } else {
+      newSelection.delete(deviceId);
+    }
+    setSelectedDevices(newSelection);
+  };
+
+  // Handle select all devices
+  const handleSelectAll = (isSelected) => {
+    if (isSelected) {
+      setSelectedDevices(new Set(devices.map(device => device.id)));
+    } else {
+      setSelectedDevices(new Set());
+    }
+  };
+
+  // Device action handlers
+  const handleStartDevice = async (deviceId) => {
+    try {
+      const response = await apiCall(`/api/devices/${deviceId}/apply`, {
+        method: 'POST',
+        body: JSON.stringify({ method: 'start' })
+      });
+      
+      if (response && response.ok) {
+        console.log('Device start command sent');
+        fetchDevices(); // Refresh device list
+      }
+    } catch (error) {
+      console.error('Error starting device:', error);
+    }
+  };
+
+  const handleStopDevice = async (deviceId) => {
+    try {
+      const response = await apiCall(`/api/devices/${deviceId}/apply`, {
+        method: 'POST',
+        body: JSON.stringify({ method: 'stop' })
+      });
+      
+      if (response && response.ok) {
+        console.log('Device stop command sent');
+        fetchDevices(); // Refresh device list
+      }
+    } catch (error) {
+      console.error('Error stopping device:', error);
+    }
+  };
+
+  const handleSyncDevice = async (deviceId) => {
+    try {
+      const response = await apiCall(`/api/devices/${deviceId}/apply`, {
+        method: 'POST',
+        body: JSON.stringify({ method: 'sync' })
+      });
+      
+      if (response && response.ok) {
+        console.log('Device sync command sent');
+        fetchDevices(); // Refresh device list
+      }
+    } catch (error) {
+      console.error('Error syncing device:', error);
+    }
+  };
+
+  const handleDeleteDevice = async (deviceId) => {
+    if (window.confirm('Are you sure you want to delete this device?')) {
+      try {
+        const response = await apiCall(`/api/devices/${deviceId}`, {
+          method: 'DELETE'
+        });
+        
+        if (response && response.ok) {
+          console.log('Device deleted');
+          fetchDevices(); // Refresh device list
+        }
+      } catch (error) {
+        console.error('Error deleting device:', error);
+      }
+    }
+  };
+
 
 
   if (loading) {
@@ -118,19 +229,71 @@ const Devices = () => {
         </div>
       </div>
 
-      <div className="mb-3">
-        <h6 className="text-muted">Filter by device attributes</h6>
-      </div>
+      {/* Bulk Actions Bar */}
+      {selectedDevices.size > 0 && (
+        <div className="bulk-actions-bar mb-3 p-3 bg-light border rounded">
+          <Row className="align-items-center">
+            <Col md={6}>
+              <span className="fw-bold">{selectedDevices.size} device{selectedDevices.size !== 1 ? 's' : ''} selected</span>
+            </Col>
+            <Col md={6} className="text-end">
+              <ButtonGroup>
+                <Button variant="success" size="sm" onClick={() => Array.from(selectedDevices).forEach(handleStartDevice)}>
+                  <FaPlay className="me-1" />Start
+                </Button>
+                <Button variant="warning" size="sm" onClick={() => Array.from(selectedDevices).forEach(handleStopDevice)}>
+                  <FaStop className="me-1" />Stop
+                </Button>
+                <Button variant="info" size="sm" onClick={() => Array.from(selectedDevices).forEach(handleSyncDevice)}>
+                  <FaSync className="me-1" />Sync
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => Array.from(selectedDevices).forEach(handleDeleteDevice)}>
+                  <FaTrash className="me-1" />Delete
+                </Button>
+              </ButtonGroup>
+            </Col>
+          </Row>
+        </div>
+      )}
 
       <Card>
+        <Card.Header>
+          <Row className="align-items-center">
+            <Col md={6}>
+              <Form.Check
+                type="checkbox"
+                id="select-all"
+                label="Select All Devices"
+                checked={devices.length > 0 && selectedDevices.size === devices.length}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+              />
+            </Col>
+            <Col md={6} className="text-end">
+              <small className="text-muted">{devices.length} device{devices.length !== 1 ? 's' : ''} total</small>
+            </Col>
+          </Row>
+        </Card.Header>
         <Card.Body>
           {devices.length > 0 ? (
             <>
               {devices.map((device) => (
                 <div key={device.id} className="device-card mb-4 p-3 border rounded">
-                  <Row>
-                    <Col md={6}>
-                      <h5 className="mb-2">{device.name}</h5>
+                  <Row className="align-items-center">
+                    <Col md={1}>
+                      <Form.Check
+                        type="checkbox"
+                        id={`device-${device.id}`}
+                        checked={selectedDevices.has(device.id)}
+                        onChange={(e) => handleDeviceSelect(device.id, e.target.checked)}
+                      />
+                    </Col>
+                    <Col md={5}>
+                      <div className="d-flex align-items-center mb-2">
+                        <FaServer className="me-2 text-primary" />
+                        <Link to={`/devices/${device.id}`} className="text-decoration-none">
+                          <h5 className="mb-0">{device.name}</h5>
+                        </Link>
+                      </div>
                       <div className="mb-2">
                         {getStatusBadge(device.status)}{' '}
                         {getConnectionBadge(device.connection)}
@@ -146,32 +309,59 @@ const Devices = () => {
                         </div>
                       )}
                     </Col>
-                    <Col md={6}>
+                    <Col md={4}>
                       <div className="device-details">
                         <div><strong>Hostname:</strong> {device.hostname}</div>
                         <div><strong>WAN IPs:</strong> {device.wanIPs}</div>
                         <div><strong>Serial:</strong> {device.serial}</div>
                         <div><strong>Machine ID:</strong> <small className="text-muted">{device.machineId}</small></div>
-                        <div><strong>ID:</strong> <small className="text-muted">{device.id}</small></div>
+                      </div>
+                    </Col>
+                    <Col md={2}>
+                      <div className="action-buttons text-end">
+                        <ButtonGroup vertical className="w-100">
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => handleStartDevice(device.id)}
+                            disabled={device.connection === 'Connected'}
+                          >
+                            <FaPlay className="me-1" />Start
+                          </Button>
+                          <Button
+                            variant="warning"
+                            size="sm"
+                            onClick={() => handleStopDevice(device.id)}
+                            disabled={device.connection === 'Not Connected'}
+                          >
+                            <FaStop className="me-1" />Stop
+                          </Button>
+                          <Button
+                            variant="info"
+                            size="sm"
+                            onClick={() => handleSyncDevice(device.id)}
+                          >
+                            <FaSync className="me-1" />Sync
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDeleteDevice(device.id)}
+                          >
+                            <FaTrash className="me-1" />Delete
+                          </Button>
+                        </ButtonGroup>
                       </div>
                     </Col>
                   </Row>
                 </div>
               ))}
-              
-              <div className="mt-3">
-                <small className="text-muted">{devices.length} device{devices.length !== 1 ? 's' : ''} in total</small>
-              </div>
             </>
           ) : (
             <Alert variant="info" className="text-center">
-              No devices found.
-            </Alert>
-          )}
-
-          {devices.length === 0 && (
-            <Alert variant="info" className="text-center">
-              No devices found.
+              <FaServer size={48} className="mb-3 text-muted" />
+              <h5>No devices found</h5>
+              <p>Your devices will appear here once they are registered and approved.</p>
             </Alert>
           )}
         </Card.Body>
