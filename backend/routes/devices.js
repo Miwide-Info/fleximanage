@@ -132,8 +132,9 @@ const checkUpdReq = (qtype, req) => new Promise(function (resolve, reject) {
       org: req.user.defaultOrg._id
     })
       .then((mres) => {
-        // Don't allow any changes if the device is not approved
-        if (!mres[0].isApproved && !req.body.isApproved) {
+        // Don't allow any changes if the device is not approved and we're not approving it
+        // Hot reload test - this comment should trigger nodemon restart
+        if (!mres[0].isApproved && req.body.hasOwnProperty('isApproved') && !req.body.isApproved) {
           return reject(new Error('Device must be first approved'));
         }
 

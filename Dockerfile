@@ -24,6 +24,8 @@ WORKDIR /app
 COPY backend/package*.json ./backend/
 WORKDIR /app/backend
 RUN npm ci --only=production
+# Install nodemon globally for development hot reloading
+RUN npm install -g nodemon
 
 # Copy backend source code
 COPY backend/ ./
@@ -53,4 +55,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # Start the backend application
 WORKDIR /app/backend
-CMD ["npm", "start"]
+# Use nodemon in development, regular node in production
+CMD ["sh", "-c", "if [ \"$NODE_ENV\" = \"development\" ]; then nodemon --watch . --ext js ./bin/www; else npm start; fi"]

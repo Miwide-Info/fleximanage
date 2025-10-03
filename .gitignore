@@ -92,3 +92,7 @@ runtime-fix.js
 create_token.js
 
 # (Removed) legacy experimental frontend-react/ directory cleaned up
+
+# myself
+.vscode/
+*.md

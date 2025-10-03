@@ -16,6 +16,7 @@ const DeviceInfo = () => {
   const [deviceName, setDeviceName] = useState('');
   const [description, setDescription] = useState('');
   const [isApproved, setIsApproved] = useState(false);
+  const [originalIsApproved, setOriginalIsApproved] = useState(false);
   const [saving, setSaving] = useState(false);
   
   // Hardware configuration modal state
@@ -112,7 +113,9 @@ const DeviceInfo = () => {
       setDeviceName(deviceData?.name || '');
       setDescription(deviceData?.description || '');
       // Ensure boolean conversion - handle string 'true'/'false', numbers, etc.
-      setIsApproved(Boolean(deviceData?.isApproved));
+      const approvedStatus = Boolean(deviceData?.isApproved);
+      setIsApproved(approvedStatus);
+      setOriginalIsApproved(approvedStatus);
       
       // Initialize hardware configuration fields
       setHwCpuCores(deviceData?.cpuInfo?.cores || '4');
@@ -170,12 +173,17 @@ const DeviceInfo = () => {
       
       const updateData = {
         name: deviceName,
-        description: description,
-        isApproved: Boolean(isApproved)
+        description: description
       };
+      
+      // Only include isApproved if it has actually changed
+      if (isApproved !== originalIsApproved) {
+        updateData.isApproved = Boolean(isApproved);
+      }
       
       console.log('Saving device data:', updateData);
       console.log('isApproved value:', isApproved, 'type:', typeof isApproved);
+      console.log('originalIsApproved:', originalIsApproved, 'changed:', isApproved !== originalIsApproved);
 
       const response = await apiCall(`/api/devices/${deviceId}`, {
         method: 'PUT',
@@ -919,34 +927,37 @@ const DeviceInfo = () => {
                 </Card.Header>
                 <Card.Body>
                   <Form>
-                    {/* Editable Input Fields */}
-                    <div className="mb-4">
-                      <Form.Group className="mb-3">
-                        <Form.Label><strong>Device Name:</strong></Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={deviceName}
-                          onChange={(e) => setDeviceName(e.target.value)}
-                          placeholder="Enter device name"
-                        />
-                      </Form.Group>
+                    {/* Editable Fields Section */}
+                    <div className="editable-info-rows mb-4">
+                      <Row className="mb-3">
+                        <Col md={3}><strong>Device Name:</strong></Col>
+                        <Col md={9}>
+                          <Form.Control
+                            type="text"
+                            value={deviceName}
+                            onChange={(e) => setDeviceName(e.target.value)}
+                            placeholder="Enter device name"
+                            size="sm"
+                          />
+                        </Col>
+                      </Row>
                       
-                      <Form.Group className="mb-3">
-                        <Form.Label><strong>Description:</strong></Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Enter device description"
-                        />
-                      </Form.Group>
-                    </div>
-
-                    {/* Toggle Switch */}
-                    <div className="mb-4">
-                      <Form.Group className="mb-3">
-                        <Form.Label><strong>Approved:</strong></Form.Label>
-                        <div className="mt-2">
+                      <Row className="mb-3">
+                        <Col md={3}><strong>Description:</strong></Col>
+                        <Col md={9}>
+                          <Form.Control
+                            type="text"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Enter device description"
+                            size="sm"
+                          />
+                        </Col>
+                      </Row>
+                      
+                      <Row className="mb-3">
+                        <Col md={3}><strong>Approved:</strong></Col>
+                        <Col md={9}>
                           <Form.Check
                             type="switch"
                             id="approved-switch"
@@ -955,83 +966,53 @@ const DeviceInfo = () => {
                             onChange={(e) => setIsApproved(e.target.checked)}
                             className="custom-switch"
                           />
-                        </div>
-                      </Form.Group>
+                        </Col>
+                      </Row>
                     </div>
 
                     {/* Read-only Display Fields */}
                     <hr />
                     <h6 className="mb-3 text-muted">System Information (Read-only)</h6>
                     
-                    <div className="info-display-grid">
-                      <div className="info-display-item">
-                        <Form.Label><strong>Host Name:</strong></Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={device?.hostname || 'flexiwan-router'}
-                          readOnly
-                          className="readonly-field"
-                        />
-                      </div>
+                    <div className="system-info-rows">
+                      <Row className="mb-2">
+                        <Col md={3}><strong>Host Name:</strong></Col>
+                        <Col md={9}><code>{device?.hostname || 'flexiwan-router'}</code></Col>
+                      </Row>
                       
-                      <div className="info-display-item">
-                        <Form.Label><strong>Hardware:</strong></Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={`CPU cores: ${device?.cpuInfo?.cores || '4'}, vRouter cores: ${device?.vRouterCores || '1'}, Power Saving: ${device?.powerSaving ? 'On' : 'Off'}`}
-                          readOnly
-                          className="readonly-field"
-                        />
-                      </div>
+                      <Row className="mb-2">
+                        <Col md={3}><strong>Hardware:</strong></Col>
+                        <Col md={9}>CPU cores: {device?.cpuInfo?.cores || '4'}, vRouter cores: {device?.vRouterCores || '1'}, Power Saving: {device?.powerSaving ? 'On' : 'Off'}</Col>
+                      </Row>
                       
-                      <div className="info-display-item">
-                        <Form.Label><strong>S/N:</strong></Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={device?.serial || 'System Serial Number'}
-                          readOnly
-                          className="readonly-field"
-                        />
-                      </div>
+                      <Row className="mb-2">
+                        <Col md={3}><strong>S/N:</strong></Col>
+                        <Col md={9}><code>{device?.serial || 'System Serial Number'}</code></Col>
+                      </Row>
                       
-                      <div className="info-display-item">
-                        <Form.Label><strong>Host OS:</strong></Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={`${device?.osInfo?.distro || 'focal'} (${device?.osInfo?.release || '20.04'})`}
-                          readOnly
-                          className="readonly-field"
-                        />
-                      </div>
+                      <Row className="mb-2">
+                        <Col md={3}><strong>Host OS:</strong></Col>
+                        <Col md={9}>{device?.distro?.codename || 'focal'} ({device?.distro?.version || '20.04'})</Col>
+                      </Row>
                       
-                      <div className="info-display-item">
-                        <Form.Label><strong>Machine ID:</strong></Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={device?.machineId || '35927C9A-A552-4939-9275-2CE5DB5D637B'}
-                          readOnly
-                          className="readonly-field font-monospace"
-                        />
-                      </div>
+                      <Row className="mb-2">
+                        <Col md={3}><strong>Machine ID:</strong></Col>
+                        <Col md={9}><code className="text-muted">{device?.machineId || '35927C9A-A552-4939-9275-2CE5DB5D637B'}</code></Col>
+                      </Row>
                       
-                      <div className="info-display-item">
-                        <Form.Label><strong>Device Version:</strong></Form.Label>
-                        <Form.Control
-                          type="text"
-                          value={device?.versions?.device || device?.versions?.agent || '6.4.32'}
-                          readOnly
-                          className="readonly-field"
-                        />
-                      </div>
+                      <Row className="mb-2">
+                        <Col md={3}><strong>Device Version:</strong></Col>
+                        <Col md={9}><Badge bg="info">{device?.versions?.device || device?.versions?.agent || '6.4.32'}</Badge></Col>
+                      </Row>
                       
-                      <div className="info-display-item">
-                        <Form.Label><strong>Router Status:</strong></Form.Label>
-                        <div className="mt-2">
-                          <Badge bg={isApproved ? 'success' : 'danger'} className="fs-6">
+                      <Row className="mb-2">
+                        <Col md={3}><strong>Router Status:</strong></Col>
+                        <Col md={9}>
+                          <Badge bg={isApproved ? 'success' : 'danger'}>
                             {isApproved ? 'Approved' : 'Not Approved'}
                           </Badge>
-                        </div>
-                      </div>
+                        </Col>
+                      </Row>
                     </div>
                   </Form>
                 </Card.Body>

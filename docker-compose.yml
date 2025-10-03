@@ -138,15 +138,34 @@ services:
     container_name: flexi-backend
     restart: unless-stopped
     ports:
-      - "3000:3000"   # HTTP
       - "3443:3443"   # HTTPS
     env_file:
       - .env.docker
+    environment:
+      - NODE_ENV=development  # Enable development mode for hot reloading
     volumes:
       - ./backend/logs:/app/backend/logs
       - ./backend/bin/cert.local.miwide.com:/app/backend/bin/cert.local.miwide.com:ro  # SSL certificates
       - ./frontend/src:/app/frontend/src:ro        # Mount frontend source for hot reloading
       - ./frontend/public:/app/frontend/public:ro  # Mount frontend public assets
+      # Backend source code hot reloading
+      - ./backend/routes:/app/backend/routes       # API routes
+      - ./backend/controllers:/app/backend/controllers  # Controllers
+      - ./backend/models:/app/backend/models       # Database models
+      - ./backend/deviceLogic:/app/backend/deviceLogic  # Device logic
+      - ./backend/utils:/app/backend/utils         # Utilities
+      - ./backend/middleware:/app/backend/middleware    # Middleware
+      - ./backend/services:/app/backend/services   # Services
+      - ./backend/websocket:/app/backend/websocket # WebSocket handlers
+      - ./backend/periodic:/app/backend/periodic   # Periodic tasks
+      - ./backend/logging:/app/backend/logging     # Logging modules
+      - ./backend/notifications:/app/backend/notifications  # Notifications
+      - ./backend/applicationLogic:/app/backend/applicationLogic  # Application logic
+      - ./backend/billing:/app/backend/billing     # Billing modules
+      - ./backend/broker:/app/backend/broker       # Message broker
+      - ./backend/constants:/app/backend/constants # Constants
+      - ./backend/limiters:/app/backend/limiters   # Rate limiters
+      - ./backend/migrations:/app/backend/migrations # Database migrations
     depends_on:
       mongo-setup:
         condition: service_completed_successfully
@@ -160,6 +179,25 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    networks:
+      - flexi-network
+
+  # Frontend development service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: flexi-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
     networks:
       - flexi-network
 
