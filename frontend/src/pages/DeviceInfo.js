@@ -872,12 +872,19 @@ const DeviceInfo = () => {
           Back to Devices
         </Button>
         
+        {/* Device Info Header - Icon, Name, Description in one line */}
+        <div className="d-flex align-items-center mb-3 flex-wrap">
+          <FaServer className="me-2 text-primary flex-shrink-0" style={{fontSize: '1.5rem'}} />
+          <h2 className="mb-0 me-3 flex-shrink-0">{deviceName || device?.name || 'Unknown Device'}</h2>
+          {(description || device?.description) && (
+            <span className="text-muted" style={{fontStyle: 'italic'}}>
+              {description || device?.description}
+            </span>
+          )}
+        </div>
+        
         <Row className="align-items-center">
           <Col md={8}>
-            <h2><FaServer className="me-2" />{deviceName || device?.name || 'Unknown Device'}</h2>
-            {(description || device?.description) && (
-              <p className="text-muted mb-2">{description || device?.description}</p>
-            )}
             <div className="device-badges">
               {getConnectionBadge(device?.isConnected)}
             </div>
