@@ -834,51 +834,13 @@ const DeviceInfo = () => {
           {/* 设备连接状态检查 */}
           {device && !device.isConnected && (
             <Alert variant="warning" className="mb-3">
-              <Alert.Heading>⚠️ 设备Agent连接状态异常</Alert.Heading>
+              <Alert.Heading>⚠️ 设备离线</Alert.Heading>
               <p>
-                <strong>生产环境连接问题：</strong>设备agent配置正确但无法连接到FlexiManage服务器
+                设备 <strong>{device.name}</strong> (ID: {device.machineId}) 当前未连接到 FlexiManage 服务器。
               </p>
-              <hr />
-              <div className="mb-2">
-                <strong>当前系统状态：</strong>
-                <ul className="mb-2">
-                  <li>FlexiManage服务: manage.miwide.com:3443</li>
-                  <li>数据库中设备: {device.name} (ID: {device.machineId || '未知'})</li>
-                  <li>连接状态: {device.isConnected ? '✅ 已连接' : '❌ 未连接'}</li>
-                  <li>最后更新: {device.updatedAt ? new Date(device.updatedAt).toLocaleString('zh-CN') : '未知'}</li>
-                </ul>
-              </div>
-              <div className="mb-2">
-                <strong>实际运行的设备：</strong>
-                <ul className="mb-2">
-                  <li>设备1: 10.248.5.7:8080 → UUID: EF6C7817-DC9D-42CD-AEEA-60C2AEF459DC</li>
-                  <li>设备2: 10.248.5.14:8080 → UUID: 637D52C6-D049-4D90-83F4-2E18E105F639</li>
-                </ul>
-              </div>
-              <p className="mb-2">
-                <strong>Agent配置已确认正确：</strong>
-              </p>
-              <ul className="mb-2">
-                <li>✅ server: https://manage.miwide.com:3443</li>
-                <li>✅ bypass_certificate: true</li>
-                <li>❓ 但设备UUID与数据库中的不匹配</li>
-              </ul>
               <div className="d-flex gap-2">
-                <Button variant="outline-warning" size="sm" onClick={() => fetchDeviceInfo(true)}>
-                  刷新设备数据
-                </Button>
-                <Button variant="outline-info" size="sm" onClick={() => {
-                  console.log('设备详细状态:', device);
-                  const testSteps = `生产环境连接测试步骤:\n\n1. 测试网络连接:\n   ping manage.miwide.com\n   curl -k -I https://manage.miwide.com:3443\n\n2. 检查设备agent状态:\n   ssh admin@10.248.5.7\n   sudo systemctl status flexiwan-agent\n   sudo journalctl -u flexiwan-agent --lines=20\n\n3. 检查FlexiManage服务:\n   - 确认manage.miwide.com解析到正确IP\n   - 确认3443端口开放\n   - 检查WebSocket连接处理\n\n4. 设备注册检查:\n   - UUID不匹配可能需要重新注册设备\n   - 检查token.txt文件内容`;
-                  alert(testSteps);
-                }}>
-                  连接测试步骤
-                </Button>
-                <Button variant="outline-success" size="sm" onClick={() => {
-                  const message = `🏭 生产环境诊断 - Agent连接问题\n\n✅ 环境确认:\n- FlexiManage服务: https://manage.miwide.com:3443 ✓\n- 设备IP: 10.248.5.7:8080\n- 设备UUID: EF6C7817-DC9D-42CD-AEEA-60C2AEF459DC\n\n🔍 当前Agent配置:\nserver: https://manage.miwide.com:3443\n\n❓ 可能的问题:\n1. Agent配置缺少端口号 (应该包含 :3443)\n2. 网络连接问题 (防火墙/DNS)\n3. SSL证书验证问题\n4. Agent服务未正常运行\n\n🛠️ 检查步骤:\n1. SSH到设备: ssh admin@10.248.5.7\n2. 检查agent状态: sudo systemctl status flexiwan-agent\n3. 查看agent日志: sudo journalctl -u flexiwan-agent -f\n4. 测试连接: curl -k https://manage.miwide.com:3443\n\n� 如果配置缺少端口，修改为:\nserver: https://manage.miwide.com:3443`;
-                  alert(message);
-                }}>
-                  🏭 生产环境诊断
+                <Button variant="outline-primary" size="sm" onClick={() => fetchDeviceInfo(true)}>
+                  <FaSync className="me-1" />刷新状态
                 </Button>
               </div>
             </Alert>
