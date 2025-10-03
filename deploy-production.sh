@@ -1,46 +1,46 @@
 #!/bin/bash
 
-# FlexiManage 生产环境部署脚本
-# 使用方法: bash deploy-production.sh
+# FlexiManage Production Environment Deployment Script
+# Usage: bash deploy-production.sh
 
 set -e
 
-echo "🚀 FlexiManage 生产环境部署开始..."
+echo "🚀 Starting FlexiManage production environment deployment..."
 
-# 1. 拉取最新代码
-echo "📥 拉取最新代码..."
+# 1. Pull the latest code
+echo "📥 Pulling the latest code..."
 git pull origin main
 
-# 2. 安装前端依赖
-echo "📦 安装前端依赖..."
+# 2. Install frontend dependencies
+echo "📦 Installing frontend dependencies..."
 cd frontend
 npm install
 
-# 3. 构建前端
-echo "🔨 构建前端生产版本..."
+# 3. Build the frontend
+echo "🔨 Building frontend for production..."
 npm run build
 
-# 4. 返回根目录
+# 4. Return to the root directory
 cd ..
 
-# 5. 重启Docker服务
-echo "🔄 重启Docker服务..."
+# 5. Restart Docker services
+echo "🔄 Restarting Docker services..."
 if command -v docker-compose &> /dev/null; then
     docker-compose restart backend
 elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
     docker compose restart backend
 else
-    echo "❌ Docker Compose 未找到，请手动重启后端服务"
+    echo "❌ Docker Compose not found, please restart the backend service manually"
     exit 1
 fi
 
-echo "✅ 部署完成!"
+echo "✅ Deployment complete!"
 echo ""
-echo "🌐 请访问以下网址验证部署:"
+echo "🌐 Please visit the following URL to verify the deployment:"
 echo "   https://manage.miwide.com:3443/devices"
 echo ""
-echo "💡 如果仍有问题，请检查:"
-echo "   1. 防火墙设置"
-echo "   2. DNS解析"
-echo "   3. SSL证书"
-echo "   4. 容器日志: docker compose logs backend"
+echo "💡 If problems persist, please check:"
+echo "   1. Firewall settings"
+echo "   2. DNS resolution"
+echo "   3. SSL certificate"
+echo "   4. Container logs: docker compose logs backend"

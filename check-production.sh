@@ -1,57 +1,57 @@
 #!/bin/bash
 
-# FlexiManage 生产环境诊断脚本
-# 使用方法: bash check-production.sh
+# FlexiManage Production Environment Diagnostic Script
+# Usage: bash check-production.sh
 
-echo "🔍 FlexiManage 生产环境诊断..."
+echo "🔍 FlexiManage Production Environment Diagnosis..."
 echo "=================================="
 
-# 1. 检查网络连接
-echo "1. 🌐 检查网络连接..."
+# 1. Check network connection
+echo "1. 🌐 Checking network connection..."
 if ping -c 3 manage.miwide.com &> /dev/null; then
-    echo "   ✅ manage.miwide.com 网络连接正常"
+    echo "   ✅ manage.miwide.com network connection is normal"
 else
-    echo "   ❌ manage.miwide.com 网络连接失败"
+    echo "   ❌ manage.miwide.com network connection failed"
 fi
 
-# 2. 检查HTTPS连接
-echo "2. 🔒 检查HTTPS连接..."
+# 2. Check HTTPS connection
+echo "2. 🔒 Checking HTTPS connection..."
 if curl -k -I -s https://manage.miwide.com:3443 | grep -q "200 OK"; then
-    echo "   ✅ HTTPS连接正常"
+    echo "   ✅ HTTPS connection is normal"
 else
-    echo "   ❌ HTTPS连接失败"
+    echo "   ❌ HTTPS connection failed"
 fi
 
-# 3. 检查本地服务状态
-echo "3. 🐳 检查Docker容器状态..."
+# 3. Check local service status
+echo "3. 🐳 Checking Docker container status..."
 docker compose ps
 
-# 4. 检查前端构建
-echo "4. 📦 检查前端构建..."
+# 4. Check frontend build
+echo "4. 📦 Checking frontend build..."
 if [ -d "frontend/build" ]; then
-    echo "   ✅ 前端构建目录存在"
-    echo "   📁 构建文件:"
+    echo "   ✅ Frontend build directory exists"
+    echo "   📁 Build files:"
     ls -la frontend/build/
 else
-    echo "   ❌ 前端构建目录不存在"
+    echo "   ❌ Frontend build directory does not exist"
 fi
 
-# 5. 检查后端日志
-echo "5. 📋 检查后端日志(最近10行)..."
+# 5. Check backend logs
+echo "5. 📋 Checking backend logs (last 10 lines)..."
 docker compose logs --tail=10 backend
 
-# 6. 检查Git状态
-echo "6. 📝 检查Git状态..."
+# 6. Check Git status
+echo "6. 📝 Checking Git status..."
 git status --porcelain
 if [ $? -eq 0 ]; then
-    echo "   ✅ Git状态正常"
+    echo "   ✅ Git status is normal"
 else
-    echo "   ❌ Git状态异常"
+    echo "   ❌ Git status is abnormal"
 fi
 
 echo ""
 echo "=================================="
-echo "💡 如果问题仍然存在，请:"
-echo "   1. 运行: bash deploy-production.sh"
-echo "   2. 检查防火墙和DNS设置"
-echo "   3. 联系系统管理员"
+echo "💡 If the problem persists, please:"
+echo "   1. Run: bash deploy-production.sh"
+echo "   2. Check firewall and DNS settings"
+echo "   3. Contact the system administrator"
