@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Badge, Button, Alert, Spinner, Tab, Tabs, Form, Modal, Dropdown, Table } from 'react-bootstrap';
 import { FaArrowLeft, FaServer, FaNetworkWired, FaChartLine, FaCog, FaSave, FaMicrochip, FaChevronDown, FaSync } from 'react-icons/fa';
@@ -35,27 +35,51 @@ const DeviceInfo = () => {
   const [interfaceChanges, setInterfaceChanges] = useState({});
   const [syncingConfig, setSyncingConfig] = useState(false);
 
-  useEffect(() => {
-    fetchDeviceInfo();
-  }, [deviceId]);
+  
 
-  // 自动刷新agent数据 - 每30秒检查一次
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!loading && device) {
-        console.log('自动刷新设备agent数据...');
-        fetchDeviceInfo(true);
+
+
+
+
+  const getConnectionBadge = (connection) => {
+    const variants = {
+      'Connected': 'success',
+      'Not Connected': 'danger',
+      'Connecting': 'warning'
+    };
+    return <Badge bg={variants[connection] || 'secondary'}>{connection}</Badge>;
+  };
+
+  const apiCall = useCallback(async (url, options = {}) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return null;
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers
       }
-    }, 30000); // 30秒刷新一次
+    });
 
-    return () => clearInterval(interval);
-  }, [device, loading]);
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      navigate('/login');
+      return null;
+    }
 
-  const fetchDeviceInfo = async (forceRefresh = false) => {
+    return response;
+  }, [navigate]);
+
+  const fetchDeviceInfo = useCallback(async (forceRefresh = false) => {
     try {
       const url = `/api/devices/${deviceId}${forceRefresh ? '?refresh=' + Date.now() : ''}`;
       console.log('🔍 Fetching device info from:', url);
-      
+
       const response = await apiCall(url, {
         method: 'GET',
         headers: forceRefresh ? { 'Cache-Control': 'no-cache' } : {}
@@ -79,36 +103,36 @@ const DeviceInfo = () => {
 
       const data = await response.json();
       console.log('✅ Successfully received API data:', data);
-      
+
       // Handle array response - get the first device
       const deviceData = Array.isArray(data) ? data[0] : data;
       setDevice(deviceData);
-      
-      // Debug logging - 显示从设备agent接收到的真实数据
+
+      // Debug logging - Display real data received from device agent
       console.log('Raw API data:', data);
       console.log('Device data after processing:', deviceData);
       console.log('Device isApproved:', deviceData?.isApproved);
       console.log('Type of isApproved:', typeof deviceData?.isApproved);
       console.log('Device interfaces from agent:', deviceData?.interfaces);
       console.log('Interfaces count:', deviceData?.interfaces?.length || 0);
-      
-      // 设备连接和注册状态检查
-      console.log('设备连接状态检查:');
-      console.log('- 设备名称:', deviceData?.name);
-      console.log('- 机器ID:', deviceData?.machineId);
-      console.log('- 是否连接:', deviceData?.isConnected);
-      console.log('- 连接状态:', deviceData?.connectionStatus);
-      console.log('- 最后连接时间:', deviceData?.lastConnection);
-      console.log('- 设备状态:', deviceData?.status);
-      
-      // 检查设备agent数据中可能的接口字段名
+
+      // Device connection and registration status check
+      console.log('Device connection status check:');
+      console.log('- Device name:', deviceData?.name);
+      console.log('- Machine ID:', deviceData?.machineId);
+      console.log('- Is connected:', deviceData?.isConnected);
+      console.log('- Connection status:', deviceData?.connectionStatus);
+      console.log('- Last connection time:', deviceData?.lastConnection);
+      console.log('- Device status:', deviceData?.status);
+
+      // Check possible interface field names in device agent data
       console.log('Checking possible interface fields:');
       console.log('- interfaces:', deviceData?.interfaces);
       console.log('- networkInterfaces:', deviceData?.networkInterfaces);
       console.log('- deviceInterfaces:', deviceData?.deviceInterfaces);
       console.log('- ports:', deviceData?.ports);
       console.log('- nics:', deviceData?.nics);
-      
+
       // Initialize editable fields
       setDeviceName(deviceData?.name || '');
       setDescription(deviceData?.description || '');
@@ -116,56 +140,38 @@ const DeviceInfo = () => {
       const approvedStatus = Boolean(deviceData?.isApproved);
       setIsApproved(approvedStatus);
       setOriginalIsApproved(approvedStatus);
-      
+
       // Initialize hardware configuration fields
       setHwCpuCores(deviceData?.cpuInfo?.cores || '4');
       setCurrentVRouterCores(deviceData?.vRouterCores || '1');
       setVRouterCores(deviceData?.vRouterCores || '1');
       setPowerSaving(Boolean(deviceData?.powerSaving));
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching device info:', error);
       setError(error.message || 'Failed to fetch device information');
       setLoading(false);
     }
-  };
+  }, [deviceId, apiCall]);
 
+  // initial fetch and periodic refresh
+  useEffect(() => {
+    // fetchDeviceInfo is stable (useCallback) so safe to add as dependency
+    fetchDeviceInfo();
+  }, [fetchDeviceInfo]);
 
-
-  const getConnectionBadge = (connection) => {
-    const variants = {
-      'Connected': 'success',
-      'Not Connected': 'danger',
-      'Connecting': 'warning'
-    };
-    return <Badge bg={variants[connection] || 'secondary'}>{connection}</Badge>;
-  };
-
-  const apiCall = async (url, options = {}) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return null;
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        ...options.headers
+  // Auto refresh agent data - check every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading && device) {
+        console.log('Auto refreshing device agent data...');
+        fetchDeviceInfo(true);
       }
-    });
+    }, 30000); // Refresh every 30 seconds
 
-    if (response.status === 401) {
-      localStorage.removeItem('token');
-      navigate('/login');
-      return null;
-    }
-
-    return response;
-  };
+    return () => clearInterval(interval);
+  }, [device, loading, fetchDeviceInfo]);
 
   const handleSave = async () => {
     try {
@@ -298,13 +304,13 @@ const DeviceInfo = () => {
 
   const syncDeviceConfig = async () => {
     if (Object.keys(interfaceChanges).length === 0) {
-      alert('没有配置更改需要同步');
+      alert('No configuration changes to sync');
       return;
     }
 
     setSyncingConfig(true);
     try {
-      // 准备接口配置数据
+      // Prepare interface configuration data
       const updatedInterfaces = device.interfaces.map(iface => ({
         ...iface,
         ...interfaceChanges[iface._id]
@@ -328,20 +334,20 @@ const DeviceInfo = () => {
         throw new Error(`Sync failed: ${response.status}`);
       }
 
-      console.log('设备配置同步成功，等待agent应用配置...');
+      console.log('Device configuration synced successfully, waiting for agent to apply configuration...');
       
-      // 清除更改并刷新数据
+      // Clear changes and refresh data
       setInterfaceChanges({});
       setEditingInterface(null);
       
-      // 等待一会后刷新设备信息
+      // Wait a moment then refresh device information
       setTimeout(() => {
         fetchDeviceInfo(true);
       }, 2000);
 
     } catch (error) {
-      console.error('配置同步失败:', error);
-      setError(error.message || '配置同步失败');
+      console.error('Configuration sync failed:', error);
+      setError(error.message || 'Configuration sync failed');
     } finally {
       setSyncingConfig(false);
     }
@@ -370,7 +376,7 @@ const DeviceInfo = () => {
             <div className="d-flex justify-content-between align-items-center mb-3">
               <div>
                 <small className="text-muted">
-                  最后更新: {device ? new Date().toLocaleString('zh-CN') : '未获取'}
+                  Last updated: {device ? new Date().toLocaleString('en-US') : 'Not fetched'}
                 </small>
               </div>
               <div>
@@ -381,7 +387,7 @@ const DeviceInfo = () => {
                   disabled={loading}
                 >
                   <FaSync className={`me-1 ${loading ? 'fa-spin' : ''}`} />
-                  {loading ? '刷新中...' : '刷新Agent数据'}
+                  {loading ? 'Refreshing...' : 'Refresh Agent Data'}
                 </Button>
               </div>
             </div>
@@ -506,7 +512,7 @@ const DeviceInfo = () => {
                             variant="outline-primary" 
                             size="sm" 
                             className="me-1" 
-                            title="编辑接口配置"
+                            title="Edit interface configuration"
                             onClick={() => setEditingInterface(iface)}
                           >
                             <FaCog />
@@ -514,7 +520,7 @@ const DeviceInfo = () => {
                           <Button 
                             variant="outline-info" 
                             size="sm" 
-                            title="接口诊断"
+                            title="Interface diagnostics"
                             onClick={() => handleInterfaceDiagnostic(iface)}
                           >
                             <FaNetworkWired />
@@ -541,7 +547,7 @@ const DeviceInfo = () => {
                     <div>
                       <small className="text-muted">
                         {Object.keys(interfaceChanges).length > 0 && 
-                          `有 ${Object.keys(interfaceChanges).length} 个接口配置待同步`
+                          `${Object.keys(interfaceChanges).length} interface configurations pending sync`
                         }
                       </small>
                     </div>
@@ -554,7 +560,7 @@ const DeviceInfo = () => {
                         onClick={syncDeviceConfig}
                       >
                         <FaSync className={`me-1 ${syncingConfig ? 'fa-spin' : ''}`} />
-                        {syncingConfig ? '同步中...' : 'Sync Device Config'}
+                        {syncingConfig ? 'Syncing...' : 'Sync Device Config'}
                       </Button>
                       <Button 
                         variant="outline-secondary" 
@@ -563,7 +569,7 @@ const DeviceInfo = () => {
                         disabled={loading}
                       >
                         <FaSync className={`me-1 ${loading ? 'fa-spin' : ''}`} />
-                        刷新Agent数据
+                        Refresh Agent Data
                       </Button>
                     </div>
                   </div>
@@ -1203,7 +1209,7 @@ const DeviceInfo = () => {
       {/* Interface Edit Modal */}
       <Modal show={editingInterface !== null} onHide={() => setEditingInterface(null)} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>编辑接口配置 - {editingInterface?.name}</Modal.Title>
+          <Modal.Title>Edit Interface Configuration - {editingInterface?.name}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {editingInterface && (
@@ -1211,7 +1217,7 @@ const DeviceInfo = () => {
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>DHCP配置</Form.Label>
+                    <Form.Label>DHCP Configuration</Form.Label>
                     <Form.Select 
                       value={interfaceChanges[editingInterface._id]?.dhcp || editingInterface.dhcp}
                       onChange={(e) => handleInterfaceEdit(editingInterface, 'dhcp', e.target.value)}
@@ -1223,7 +1229,7 @@ const DeviceInfo = () => {
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>IPv4地址</Form.Label>
+                    <Form.Label>IPv4 Address</Form.Label>
                     <Form.Control
                       type="text"
                       placeholder="192.168.1.100"
@@ -1236,7 +1242,7 @@ const DeviceInfo = () => {
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>子网掩码</Form.Label>
+                    <Form.Label>Subnet Mask</Form.Label>
                     <Form.Control
                       type="text"
                       placeholder="24"
@@ -1247,7 +1253,7 @@ const DeviceInfo = () => {
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>网关</Form.Label>
+                    <Form.Label>Gateway</Form.Label>
                     <Form.Control
                       type="text"
                       placeholder="192.168.1.1"
@@ -1258,7 +1264,7 @@ const DeviceInfo = () => {
                 </Col>
               </Row>
               <Form.Group className="mb-3">
-                <Form.Label>DNS服务器 (逗号分隔)</Form.Label>
+                <Form.Label>DNS Servers (comma separated)</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="8.8.8.8, 8.8.4.4"
@@ -1270,7 +1276,7 @@ const DeviceInfo = () => {
                 />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>路由权重 (Metric)</Form.Label>
+                <Form.Label>Routing Weight (Metric)</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="100"
@@ -1283,16 +1289,16 @@ const DeviceInfo = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setEditingInterface(null)}>
-            取消
+            Cancel
           </Button>
           <Button 
             variant="primary" 
             onClick={() => {
               setEditingInterface(null);
-              // 配置更改已保存到 interfaceChanges 状态中
+              // Configuration changes are saved to interfaceChanges state
             }}
           >
-            保存更改
+            Save Changes
           </Button>
         </Modal.Footer>
       </Modal>
