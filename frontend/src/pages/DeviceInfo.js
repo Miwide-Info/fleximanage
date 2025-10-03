@@ -848,14 +848,6 @@ const DeviceInfo = () => {
                   </Button>
                 </Card.Header>
                 <Card.Body>
-                  {/* Warning for unapproved devices */}
-                  {!isApproved && (
-                    <Alert variant="warning" className="mb-3">
-                      <Alert.Heading>Device Not Approved</Alert.Heading>
-                      This device must be approved before making changes. Please enable the "Approved" toggle switch below and save to approve this device first.
-                    </Alert>
-                  )}
-                  
                   <Form>
                     {/* Editable Input Fields */}
                     <div className="mb-4">
