@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
+import '../../styles/unified-table.css';
 
 // Simple Members listing page. Fetches /members and displays basic columns.
 // Reuses existing auth token + permissions guard applied at routing level.
@@ -13,7 +14,7 @@ export default function AccountMembers () {
   const [serverMeta, setServerMeta] = useState({ offset: 0, limit: 25, total: 0 });
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  // Initialize with both states so界面明确显示“全部状态”而不是依赖空数组语义
+  // Initialize with both states so the interface clearly shows "all states" instead of relying on empty array semantics
   const [stateFilters, setStateFilters] = useState(['unverified', 'verified']); // ['unverified','verified'] means show all
   const [sort, setSort] = useState([]); // array of { key, dir } where dir is 'asc'|'desc'
   const [selectedIds, setSelectedIds] = useState([]); // user__id values
@@ -161,22 +162,33 @@ export default function AccountMembers () {
       </div>
       {rows.length === 0 && !loading && <p>No users found.</p>}
       {rows.length > 0 && (
-        <div className="table-responsive">
-          <table className="table table-sm table-striped align-middle">
-            <thead>
-              <tr>
-                {isSuperAdmin && (
-                  <th>
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setSelectedIds(rows.map(r => r.user__id));
-                        } else setSelectedIds([]);
-                      }}
-                    />
-                  </th>
+        <div className="unified-table-container">
+          <div className="unified-table-header">
+            <h5>Organization Members</h5>
+            {selectedIds.length > 0 && (
+              <div className="header-actions">
+                <span className="text-muted me-2">{selectedIds.length} selected</span>
+                <button className="btn btn-sm btn-outline-danger">Bulk Actions</button>
+              </div>
+            )}
+          </div>
+          <div className="unified-table-responsive">
+            <table className="unified-table table table-striped align-middle mb-0">
+              <thead>
+                <tr>
+                  {isSuperAdmin && (
+                    <th>
+                      <input
+                        type="checkbox"
+                        className="row-checkbox"
+                        checked={allSelected}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setSelectedIds(rows.map(r => r.user__id));
+                          } else setSelectedIds([]);
+                        }}
+                      />
+                    </th>
                 )}
                 <th role="button" onClick={() => toggleSort('name')}>First Name{sortIndicator('name')}</th>
                 <th role="button" onClick={() => toggleSort('lastName')}>Last Name{sortIndicator('lastName')}</th>
@@ -279,6 +291,7 @@ export default function AccountMembers () {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
       {isSuperAdmin && selectedIds.length > 0 && (

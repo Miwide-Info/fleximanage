@@ -1,0 +1,112 @@
+# FlexiManage .gitignore 优化版本
+
+# 运行时日志和缓存
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# 依赖目录
+node_modules/
+jspm_packages/
+
+# 构建输出
+build/
+dist/
+lib/
+out/
+*.tgz
+*.tar.gz
+
+# 环境配置
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE和编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# SSL证书和密钥
+*.pem
+*.key
+*.crt
+*.csr
+ssl/
+certs/
+cert.local.*/
+
+# Docker相关
+.dockerignore
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 运行时配置
+pm2.json
+ecosystem.config.js
+
+# 开发调试文件
+debug-*.js
+test-*.js
+**/fix-*.js
+temp-*
+*.tmp
+
+# 分析和报告文档（保留重要文档）
+AGENT_STATUS_*.md
+DASHBOARD_REAL_*.md
+DEVICE_CONTROL_*.md
+DEVICE_ROUTER_*.md
+DEVICE_SOLUTION*.md
+DEVICE_START_*.md
+DHCP_AUTO_*.md
+DOCKER_USAGE_*.md
+FINAL_RESOLUTION_*.md
+FLEXIEDGE_LOG_*.md
+IDENTICAL_DEVICES_*.md
+OPERATIONS_GUIDE*.md
+PROJECT_STATUS*.md
+START_BUTTON_*.md
+TECHNICAL_GUIDE*.md
+VPP_DIAGNOSTIC_*.md
+VPP_PERFECT_*.md
+VPP_RUNTIME_*.md
+VPP_WORKING_*.md
+
+# 临时脚本
+check-production.sh
+deploy-production.sh
+monitor-devices.sh
+test-dashboard.sh
+test_dashboard_*.sh
+test_dhcp_*.sh
+test_start_*.sh
+cleanup.sh
+
+# 临时配置文件
+Dockerfile.optimized
+docker-compose.optimized.yml
+jwt_token.txt
+
+# 保留重要文档（明确说明不忽略）
+!README.md
+!LICENSE
+!OPENSOURCE.md
+!DOCKER_README.md
+!start.sh

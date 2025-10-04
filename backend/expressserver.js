@@ -351,6 +351,16 @@ class ExpressServer {
     // Initialize authenticated routes
     this.app.use('/api/admin', adminRouter);
     this.app.use('/api/tickets', ticketsRouter);
+    
+    // Dashboard routes - using clean version
+    try {
+      this.app.use('/api/dashboard', require('./routes/dashboard-clean'));
+      console.log('Dashboard routes registered successfully');
+    } catch (error) {
+      console.error('Error registering dashboard routes:', error.message);
+      // Fallback to basic routes
+      this.app.use('/api/dashboard', require('./routes/dashboard'));
+    }
 
     // reserved for future use
     // this.app.get('/login-redirect', (req, res) => {

@@ -4,22 +4,28 @@ import axios from 'axios';
 function inferBaseURL () {
   // 1. Prefer explicit environment variable
   if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.trim() !== '') {
+    console.log('[api] Using environment variable API URL:', process.env.REACT_APP_API_URL);
     return process.env.REACT_APP_API_URL.replace(/\/$/, '');
   }
-  // 2. In browser: use current origin + /api (backend serves /api on same origin)
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
-    return window.location.origin.replace(/\/$/, '') + '/api';
-  }
-  // 3. Fallback: local development default
-  return 'http://localhost:3000/api';
+  
+  // Force relative path for development to use proxy
+  console.log('[api] Using relative path /api for proxy');
+  return '/api';
 }
 
 const api = axios.create({
   baseURL: inferBaseURL(),
-  timeout: 15000,
+  timeout: 30000, // Increased timeout for HTTPS proxy
   headers: {
     'Content-Type': 'application/json'
   }
+});
+
+// Add debug logging
+console.log('[api] API configuration:', {
+  baseURL: api.defaults.baseURL,
+  timeout: api.defaults.timeout,
+  NODE_ENV: process.env.NODE_ENV
 });
 
 // Request interceptor to add auth token

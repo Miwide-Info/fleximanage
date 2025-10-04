@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import api from '../services/api';
+import '../styles/unified-table.css';
 
 // Tokens page (Inventory > Tokens)
 // Backend endpoints (as per OpenAPI / TokensService):
@@ -193,17 +194,21 @@ const Tokens = () => {
 
       {loading ? <p>Loading…</p> : (
         tokens.length === 0 ? <p className="text-muted">No tokens yet.</p> : (
-          <div className="table-responsive">
-            <table className="table table-sm table-striped align-middle">
-              <thead>
-                <tr>
-                  <th style={{ minWidth: 140 }}>Name</th>
-                  <th style={{ minWidth: 320 }}>Token</th>
-                  <th style={{ minWidth: 180 }}>Server</th>
-                  <th style={{ minWidth: 180 }}>Created At</th>
-                  <th style={{ width: 140 }}>Actions</th>
-                </tr>
-              </thead>
+          <div className="unified-table-container">
+            <div className="unified-table-header">
+              <h5>Access Tokens</h5>
+            </div>
+            <div className="unified-table-responsive">
+              <table className="unified-table table table-striped align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th style={{ minWidth: 140 }}>Name</th>
+                    <th style={{ minWidth: 320 }}>Token</th>
+                    <th style={{ minWidth: 180 }}>Server</th>
+                    <th style={{ minWidth: 180 }}>Created At</th>
+                    <th style={{ width: 140 }}>Actions</th>
+                  </tr>
+                </thead>
               <tbody>
                 {paginated.map(t => (
                   <tr key={t.id}>
@@ -212,25 +217,28 @@ const Tokens = () => {
                     <td>{t.server || '-'}</td>
                     <td>{t.createdAt ? new Date(t.createdAt).toLocaleString(undefined, { hour12: false }) : '-'}</td>
                     <td className="d-flex flex-wrap gap-1">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary"
-                        disabled={!t.token}
-                        onClick={() => { if (t.token) { try { navigator.clipboard.writeText(t.token); } catch (_) {} } }}
-                      >Copy</button>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => handleDelete(t.id)}
-                      >Delete</button>
+                      <div className="action-buttons">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary"
+                          disabled={!t.token}
+                          onClick={() => { if (t.token) { try { navigator.clipboard.writeText(t.token); } catch (_) {} } }}
+                        >Copy</button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleDelete(t.id)}
+                        >Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 small">
-              <div>Showing {start} to {end} of {total} Results</div>
-              <div className="d-flex align-items-center gap-2">
+            </div>
+            <div className="unified-table-footer">
+              <div className="pagination-info">Showing {start} to {end} of {total} Results</div>
+              <div className="pagination-controls">
                 <button className="btn btn-sm btn-outline-secondary" disabled={page === 0} onClick={() => setPage(0)}>First</button>
                 <button className="btn btn-sm btn-outline-secondary" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Back</button>
                 <span className="px-2 fw-bold">{page}</span>

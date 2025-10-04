@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Badge, Button, Alert, Spinner, Tab, Tabs, Form, Modal, Dropdown, Table } from 'react-bootstrap';
-import { FaArrowLeft, FaServer, FaNetworkWired, FaChartLine, FaCog, FaSave, FaMicrochip, FaChevronDown, FaSync } from 'react-icons/fa';
+import { FaArrowLeft, FaServer, FaNetworkWired, FaChartLine, FaCog, FaSave, FaMicrochip, FaChevronDown, FaSync, FaSortUp, FaSortDown, FaPlay, FaStop } from 'react-icons/fa';
 import './DeviceInfo.css';
+import '../styles/unified-table.css';
 
 const DeviceInfo = () => {
   const { deviceId } = useParams();
@@ -11,6 +12,9 @@ const DeviceInfo = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('general');
+  
+  // Configuration submenu state
+  const [configSubPage, setConfigSubPage] = useState('interfaces');
   
   // Editable fields state
   const [deviceName, setDeviceName] = useState('');
@@ -27,14 +31,22 @@ const DeviceInfo = () => {
   const [powerSaving, setPowerSaving] = useState(false);
   const [applyingConfig, setApplyingConfig] = useState(false);
   
-  // Configuration submenu state
-  const [configSubPage, setConfigSubPage] = useState('interfaces');
-  
   // Interface editing state
   const [editingInterface, setEditingInterface] = useState(null);
   const [interfaceChanges, setInterfaceChanges] = useState({});
   const [syncingConfig, setSyncingConfig] = useState(false);
 
+  // Sorting state for interfaces table
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
+  
+  // Template interface changes state
+  const [templateInterfaceChanges, setTemplateInterfaceChanges] = useState({});
+  
+  // DHCP server confirmation modal state
+  const [showDhcpModal, setShowDhcpModal] = useState(false);
+  const [dhcpModalInterface, setDhcpModalInterface] = useState(null);
+  const [dhcpModalIP, setDhcpModalIP] = useState('');
+  
   
 
 
@@ -57,7 +69,10 @@ const DeviceInfo = () => {
       return null;
     }
 
-    const response = await fetch(url, {
+    // Ensure URL starts with /api for proper proxying
+    const apiUrl = url.startsWith('/api') ? url : `/api${url.startsWith('/') ? url : '/' + url}`;
+
+    const response = await fetch(apiUrl, {
       ...options,
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -121,9 +136,19 @@ const DeviceInfo = () => {
       console.log('- Device name:', deviceData?.name);
       console.log('- Machine ID:', deviceData?.machineId);
       console.log('- Is connected:', deviceData?.isConnected);
+      console.log('- Is approved:', deviceData?.isApproved);
+      console.log('- Is synced:', deviceData?.isSynced);
+      console.log('- Sync status:', deviceData?.syncStatus);
+      console.log('- Is sync:', deviceData?.isSync);
+      console.log('- Configuration synced:', deviceData?.configSynced);
+      console.log('- Sync object:', deviceData?.sync);
+      console.log('- Sync state:', deviceData?.sync?.state);
+      console.log('- Last sync:', deviceData?.lastSync);
       console.log('- Connection status:', deviceData?.connectionStatus);
       console.log('- Last connection time:', deviceData?.lastConnection);
       console.log('- Device status:', deviceData?.status);
+      console.log('- Device state:', deviceData?.state);
+      console.log('- Device deviceState:', deviceData?.deviceState);
 
       // Check possible interface field names in device agent data
       console.log('Checking possible interface fields:');
@@ -155,23 +180,11 @@ const DeviceInfo = () => {
     }
   }, [deviceId, apiCall]);
 
-  // initial fetch and periodic refresh
+  // Initial fetch of device information
   useEffect(() => {
     // fetchDeviceInfo is stable (useCallback) so safe to add as dependency
     fetchDeviceInfo();
   }, [fetchDeviceInfo]);
-
-  // Auto refresh agent data - check every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!loading && device) {
-        console.log('Auto refreshing device agent data...');
-        fetchDeviceInfo(true);
-      }
-    }, 30000); // Refresh every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [device, loading, fetchDeviceInfo]);
 
   const handleSave = async () => {
     try {
@@ -286,75 +299,9 @@ const DeviceInfo = () => {
     setShowHardwareModal(false);
   };
 
-  // Interface configuration functions
-  const handleInterfaceDiagnostic = (iface) => {
-    console.log('Running diagnostic for interface:', iface.name);
-    // TODO: Implement interface diagnostic logic
-  };
-
-  const handleInterfaceEdit = (iface, field, value) => {
-    setInterfaceChanges(prev => ({
-      ...prev,
-      [iface._id]: {
-        ...prev[iface._id],
-        [field]: value
-      }
-    }));
-  };
-
-  const syncDeviceConfig = async () => {
-    if (Object.keys(interfaceChanges).length === 0) {
-      alert('No configuration changes to sync');
-      return;
-    }
-
-    setSyncingConfig(true);
-    try {
-      // Prepare interface configuration data
-      const updatedInterfaces = device.interfaces.map(iface => ({
-        ...iface,
-        ...interfaceChanges[iface._id]
-      }));
-
-      const configData = {
-        interfaces: updatedInterfaces,
-        action: 'sync-interfaces',
-        timestamp: new Date().toISOString()
-      };
-
-      const response = await apiCall(`/api/devices/${deviceId}/sync-config`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(configData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Sync failed: ${response.status}`);
-      }
-
-      console.log('Device configuration synced successfully, waiting for agent to apply configuration...');
-      
-      // Clear changes and refresh data
-      setInterfaceChanges({});
-      setEditingInterface(null);
-      
-      // Wait a moment then refresh device information
-      setTimeout(() => {
-        fetchDeviceInfo(true);
-      }, 2000);
-
-    } catch (error) {
-      console.error('Configuration sync failed:', error);
-      setError(error.message || 'Configuration sync failed');
-    } finally {
-      setSyncingConfig(false);
-    }
-  };
-
-  const getConfigPageTitle = (subPage) => {
-    switch (subPage) {
+  // Configuration page functions
+  const getConfigPageTitle = (page) => {
+    switch (page) {
       case 'interfaces': return 'Interfaces';
       case 'firewall': return 'Firewall and NAT';
       case 'static-routes': return 'Static Routes';
@@ -373,35 +320,28 @@ const DeviceInfo = () => {
           <div>
             <h5><FaNetworkWired className="me-2" />Interfaces Configuration</h5>
             
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <div>
-                <small className="text-muted">
-                  Last updated: {device ? new Date().toLocaleString('en-US') : 'Not fetched'}
-                </small>
-              </div>
-              <div>
-                <Button 
-                  variant="outline-primary" 
-                  size="sm" 
-                  onClick={() => fetchDeviceInfo(true)}
-                  disabled={loading}
-                >
-                  <FaSync className={`me-1 ${loading ? 'fa-spin' : ''}`} />
-                  {loading ? 'Refreshing...' : 'Refresh Agent Data'}
-                </Button>
-              </div>
-            </div>
-            
             {device?.interfaces && device.interfaces.length > 0 ? (
               <>
-                <Table striped bordered hover responsive className="interfaces-table">
+                <Table striped bordered hover responsive className="unified-table interfaces-table">
                   <thead className="table-dark">
                     <tr>
-                      <th>Name</th>
+                      <th 
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={handleNameSort}
+                        title="Click to sort by name"
+                      >
+                        Name 
+                        {sortOrder === 'asc' ? (
+                          <FaSortUp className="ms-1" />
+                        ) : (
+                          <FaSortDown className="ms-1" />
+                        )}
+                      </th>
                       <th>Type</th>
                       <th>Assigned</th>
                       <th>IPv4</th>
                       <th>GW</th>
+                      <th>DNS Servers</th>
                       <th>Metric</th>
                       <th>Public IP</th>
                       <th>Path Labels</th>
@@ -411,12 +351,13 @@ const DeviceInfo = () => {
                       <th>MTU</th>
                       <th>QoS</th>
                       <th>IPv6</th>
+                      <th>Link Status</th>
                       <th>Description</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {device.interfaces.map((iface, index) => (
+                    {getSortedInterfaces(device.interfaces).map((iface, index) => (
                       <tr key={index}>
                         <td><strong>{iface.name || `eth${index}`}</strong></td>
                         <td>
@@ -425,20 +366,76 @@ const DeviceInfo = () => {
                           </Badge>
                         </td>
                         <td>
-                          <Badge bg={iface.isAssigned ? 'success' : 'secondary'}>
-                            {iface.isAssigned ? 'Yes' : 'No'}
+                          <Badge 
+                            bg={
+                              (interfaceChanges[iface._id]?.isAssigned !== undefined 
+                                ? interfaceChanges[iface._id]?.isAssigned 
+                                : iface.isAssigned) 
+                              ? 'success' : 'secondary'
+                            }
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleInterfaceEdit(
+                              iface, 
+                              'isAssigned', 
+                              !(interfaceChanges[iface._id]?.isAssigned !== undefined 
+                                ? interfaceChanges[iface._id]?.isAssigned 
+                                : iface.isAssigned)
+                            )}
+                            title="Click to toggle assigned status"
+                          >
+                            {(interfaceChanges[iface._id]?.isAssigned !== undefined 
+                              ? interfaceChanges[iface._id]?.isAssigned 
+                              : iface.isAssigned) 
+                              ? 'Yes' : 'No'}
                           </Badge>
                         </td>
                         <td>
-                          {iface.IPv4 ? (
-                            <code>{iface.IPv4}{iface.IPv4Mask ? `/${iface.IPv4Mask}` : ''}</code>
+                          {(interfaceChanges[iface._id]?.isAssigned !== undefined 
+                            ? interfaceChanges[iface._id]?.isAssigned 
+                            : iface.isAssigned) ? (
+                            // Editable IPv4 when assigned
+                            <div className="d-flex align-items-center">
+                              <Form.Control
+                                type="text"
+                                size="sm"
+                                style={{ width: '200px' }}
+                                value={
+                                  interfaceChanges[iface._id]?.IPv4 !== undefined 
+                                    ? (interfaceChanges[iface._id]?.IPv4 + 
+                                       (interfaceChanges[iface._id]?.IPv4Mask ? `/${interfaceChanges[iface._id]?.IPv4Mask}` : ''))
+                                    : (iface.IPv4 ? `${iface.IPv4}${iface.IPv4Mask ? `/${iface.IPv4Mask}` : ''}` : '')
+                                }
+                                onChange={(e) => handleIPv4Edit(iface, e.target.value)}
+                                placeholder="192.168.1.1/32"
+                                title="Enter IPv4 address with subnet mask (e.g., 192.168.1.1/32)"
+                                autoComplete="off"
+                              />
+                            </div>
                           ) : (
-                            <span className="text-muted">-</span>
+                            // Read-only IPv4 when not assigned
+                            iface.IPv4 ? (
+                              <code>{iface.IPv4}{iface.IPv4Mask ? `/${iface.IPv4Mask}` : ''}</code>
+                            ) : (
+                              <span className="text-muted">-</span>
+                            )
                           )}
                         </td>
                         <td>
                           {iface.gateway ? (
                             <code>{iface.gateway}</code>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td>
+                          {Array.isArray(iface.dnsServers) && iface.dnsServers.length > 0 ? (
+                            <div style={{fontSize: '0.8rem', maxWidth: '120px'}}>
+                              {iface.dnsServers.map((dns, i) => (
+                                <div key={i} className="mb-1">
+                                  <code>{dns}</code>
+                                </div>
+                              ))}
+                            </div>
                           ) : (
                             <span className="text-muted">-</span>
                           )}
@@ -501,6 +498,14 @@ const DeviceInfo = () => {
                           )}
                         </td>
                         <td>
+                          <Badge bg={
+                            iface.linkStatus === 'up' || iface.linkStatus === 'Up' ? 'success' : 
+                            iface.linkStatus === 'down' || iface.linkStatus === 'Down' || !iface.linkStatus ? 'danger' : 'secondary'
+                          }>
+                            {iface.linkStatus || 'Down'}
+                          </Badge>
+                        </td>
+                        <td>
                           {iface.description ? (
                             <span>{iface.description}</span>
                           ) : (
@@ -553,268 +558,604 @@ const DeviceInfo = () => {
                     </div>
                     <div>
                       <Button 
-                        variant="success" 
+                        variant="info" 
                         size="sm" 
                         className="me-2"
                         disabled={Object.keys(interfaceChanges).length === 0 || syncingConfig}
                         onClick={syncDeviceConfig}
                       >
                         <FaSync className={`me-1 ${syncingConfig ? 'fa-spin' : ''}`} />
-                        {syncingConfig ? 'Syncing...' : 'Sync Device Config'}
-                      </Button>
-                      <Button 
-                        variant="outline-secondary" 
-                        size="sm"
-                        onClick={() => fetchDeviceInfo(true)}
-                        disabled={loading}
-                      >
-                        <FaSync className={`me-1 ${loading ? 'fa-spin' : ''}`} />
-                        Refresh Agent Data
+                        {syncingConfig ? 'Syncing...' : 'Sync'}
                       </Button>
                     </div>
                   </div>
                 </div>
               </>
             ) : (
-              <>
-                <Alert variant="info" className="mb-3">
-                  <Alert.Heading>No Live Interface Data</Alert.Heading>
-                  <p>This device doesn't have live interface data available. Showing template configuration based on common device setup.</p>
-                </Alert>
-                
-                <Table striped bordered hover responsive className="interfaces-table">
-                  <thead className="table-dark">
-                    <tr>
-                      <th>Name</th>
-                      <th>Type</th>
-                      <th>Assigned</th>
-                      <th>IPv4</th>
-                      <th>GW</th>
-                      <th>Metric</th>
-                      <th>Public IP</th>
-                      <th>Path Labels</th>
-                      <th>Routing</th>
-                      <th>DHCP/Static</th>
-                      <th>MAC</th>
-                      <th>MTU</th>
-                      <th>QoS</th>
-                      <th>IPv6</th>
-                      <th>Description</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      {
-                        name: 'eth0',
-                        MAC: '00:1f:7a:40:01:80',
-                        dhcp: 'no',
-                        IPv4: '10.0.0.1',
-                        IPv4Mask: '30',
-                        gateway: '',
-                        dnsServers: [],
-                        metric: '',
-                        linkStatus: 'Down'
-                      },
-                      {
-                        name: 'eth1',
-                        MAC: '00:1f:7a:40:01:81',
-                        dhcp: 'yes',
-                        IPv4: '10.248.5.7',
-                        IPv4Mask: '24',
-                        gateway: '10.248.5.1',
-                        dnsServers: ['10.248.5.1'],
-                        metric: '100',
-                        linkStatus: 'Up'
-                      },
-                      {
-                        name: 'eth2',
-                        MAC: '00:1f:7a:40:01:82',
-                        dhcp: 'no',
-                        IPv4: '192.168.1.1',
-                        IPv4Mask: '24',
-                        gateway: '',
-                        dnsServers: ['8.8.8.8', '8.8.4.4', '1.1.1.1'],
-                        metric: '',
-                        linkStatus: 'Down'
-                      },
-                      {
-                        name: 'eth3',
-                        MAC: '00:1f:7a:40:01:83',
-                        dhcp: 'no',
-                        IPv4: '',
-                        IPv4Mask: '',
-                        gateway: '',
-                        dnsServers: [],
-                        metric: '',
-                        linkStatus: 'Down'
-                      }
-                    ].map((iface, index) => (
-                      <tr key={index}>
-                        <td><strong>{iface.name}</strong></td>
-                        <td>
-                          <Badge bg={index === 1 ? 'primary' : 'success'}>
-                            {index === 1 ? 'WAN' : 'LAN'}
-                          </Badge>
-                        </td>
-                        <td>
-                          <Badge bg="secondary">
-                            No
-                          </Badge>
-                        </td>
-                        <td>
-                          {iface.IPv4 ? (
-                            <code>{iface.IPv4}{iface.IPv4Mask ? `/${iface.IPv4Mask}` : ''}</code>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td>
-                          {iface.gateway ? (
-                            <code>{iface.gateway}</code>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td>
-                          {iface.metric ? (
-                            <Badge bg="warning" text="dark">{iface.metric}</Badge>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className="text-muted">-</span>
-                        </td>
-                        <td>
-                          <span className="text-muted">-</span>
-                        </td>
-                        <td>
-                          <Badge bg="secondary">
-                            NONE
-                          </Badge>
-                        </td>
-                        <td>
-                          <Badge bg={iface.dhcp === 'yes' ? 'primary' : 'secondary'}>
-                            {iface.dhcp === 'yes' ? 'DHCP' : 'Static'}
-                          </Badge>
-                        </td>
-                        <td><code>{iface.MAC}</code></td>
-                        <td>
-                          <Badge bg="secondary">1500</Badge>
-                        </td>
-                        <td>
-                          <span className="text-muted">-</span>
-                        </td>
-                        <td>
-                          <span className="text-muted">-</span>
-                        </td>
-                        <td>
-                          <span className="text-muted">-</span>
-                        </td>
-                        <td>
-                          <Button variant="outline-primary" size="sm" className="me-1" title="Edit">
-                            <FaCog />
-                          </Button>
-                          <Button variant="outline-danger" size="sm" title="Delete">
-                            <FaNetworkWired />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-                
-                <div className="mt-3">
-                  <Alert variant="info" className="mb-2">
-                    <strong>Template Interface Summary:</strong>
-                    <ul className="mb-0 mt-2">
-                      <li><strong>Total Interfaces:</strong> 4</li>
-                      <li><strong>DHCP:</strong> 1</li>
-                      <li><strong>Static:</strong> 3</li>
-                      <li><strong>Up:</strong> 1</li>
-                      <li><strong>Down:</strong> 3</li>
-                    </ul>
-                  </Alert>
-                  
-                  <div className="d-flex gap-2 interface-actions">
-                    <Button variant="outline-warning" size="sm">
-                      <FaCog className="me-1" />
-                      Refresh Data
-                    </Button>
-                    <Button variant="outline-primary" size="sm">
-                      <FaNetworkWired className="me-1" />
-                      Manual Configuration
-                    </Button>
-                  </div>
-                </div>
-              </>
+              <Alert variant="info">
+                <Alert.Heading>No Interface Data</Alert.Heading>
+                <p>This device doesn't have interface data available.</p>
+              </Alert>
             )}
           </div>
         );
+      
       case 'firewall':
         return (
           <div>
             <h5><FaCog className="me-2" />Firewall and NAT Configuration</h5>
             <Alert variant="info">
-              Firewall and NAT rules configuration will be displayed here.
+              <Alert.Heading>Feature Coming Soon</Alert.Heading>
+              <p>Firewall and NAT configuration will be available in a future update.</p>
             </Alert>
           </div>
         );
+      
       case 'static-routes':
         return (
           <div>
             <h5><FaCog className="me-2" />Static Routes Configuration</h5>
             <Alert variant="info">
-              Static routing configuration will be displayed here.
+              <Alert.Heading>Feature Coming Soon</Alert.Heading>
+              <p>Static routes configuration will be available in a future update.</p>
             </Alert>
           </div>
         );
+      
       case 'ospf':
         return (
           <div>
             <h5><FaCog className="me-2" />OSPF Configuration</h5>
             <Alert variant="info">
-              OSPF routing protocol configuration will be displayed here.
+              <Alert.Heading>Feature Coming Soon</Alert.Heading>
+              <p>OSPF configuration will be available in a future update.</p>
             </Alert>
           </div>
         );
+      
       case 'bgp':
         return (
           <div>
             <h5><FaCog className="me-2" />BGP Configuration</h5>
             <Alert variant="info">
-              BGP routing protocol configuration will be displayed here.
+              <Alert.Heading>Feature Coming Soon</Alert.Heading>
+              <p>BGP configuration will be available in a future update.</p>
             </Alert>
           </div>
         );
+      
       case 'routing-filters':
         return (
           <div>
             <h5><FaCog className="me-2" />Routing Filters Configuration</h5>
             <Alert variant="info">
-              Routing filters configuration will be displayed here.
+              <Alert.Heading>Feature Coming Soon</Alert.Heading>
+              <p>Routing filters configuration will be available in a future update.</p>
             </Alert>
           </div>
         );
+      
       case 'advanced-routing':
         return (
           <div>
             <h5><FaCog className="me-2" />Advanced Routing Configuration</h5>
             <Alert variant="info">
-              Advanced routing configuration will be displayed here.
+              <Alert.Heading>Feature Coming Soon</Alert.Heading>
+              <p>Advanced routing configuration will be available in a future update.</p>
             </Alert>
           </div>
         );
+      
       default:
-        return (
-          <div>
-            <h5><FaNetworkWired className="me-2" />Interfaces Configuration</h5>
-            <Alert variant="info">
-              Network interfaces configuration will be displayed here.
-            </Alert>
-          </div>
+        return renderConfigurationContent('interfaces');
+    }
+  };
+
+  // Sorting functions
+  const handleNameSort = () => {
+    setSortOrder(prevOrder => prevOrder === 'asc' ? 'desc' : 'asc');
+  };
+
+  const getSortedInterfaces = (interfaces) => {
+    if (!interfaces) return [];
+    
+    return [...interfaces].sort((a, b) => {
+      const nameA = (a.name || `eth${interfaces.indexOf(a)}`).toLowerCase();
+      const nameB = (b.name || `eth${interfaces.indexOf(b)}`).toLowerCase();
+      
+      if (sortOrder === 'asc') {
+        return nameA.localeCompare(nameB);
+      } else {
+        return nameB.localeCompare(nameA);
+      }
+    });
+  };
+
+  // Interface configuration functions
+  const handleInterfaceDiagnostic = (iface) => {
+    console.log('Running diagnostic for interface:', iface.name);
+    // TODO: Implement interface diagnostic logic
+  };
+
+  const handleInterfaceEdit = (iface, field, value) => {
+    setInterfaceChanges(prev => ({
+      ...prev,
+      [iface._id]: {
+        ...prev[iface._id],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleIPv4Edit = (iface, value) => {
+    // Allow more flexible input during typing
+    // Parse IPv4 with optional mask (e.g., "192.168.1.1/32" or "192.168.1.1")
+    // Support full range of subnet masks (0-32)
+    const ipMaskRegex = /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?:\/(\d{1,2}))?$/;
+    const match = value.match(ipMaskRegex);
+    
+    console.log('IPv4 input changed:', { interface: iface.name, value, match });
+    
+    if (match) {
+      const [, ip, mask] = match;
+      const updates = {
+        IPv4: ip,
+        // Only set mask if provided, don't auto-complete
+        IPv4Mask: mask || ''
+      };
+      
+      console.log('Parsed IPv4 data:', updates);
+      
+      setInterfaceChanges(prev => ({
+        ...prev,
+        [iface._id]: {
+          ...prev[iface._id],
+          ...updates
+        }
+      }));
+      
+      // Check if this is a LAN interface with assigned=yes, type=lan, and 32-bit subnet mask
+      // Only show DHCP modal if these conditions are met and DHCP is not already enabled
+      const isAssigned = interfaceChanges[iface._id]?.isAssigned !== undefined 
+        ? interfaceChanges[iface._id]?.isAssigned 
+        : iface.isAssigned;
+      const interfaceType = interfaceChanges[iface._id]?.type || iface.type || '';
+      const currentDhcp = interfaceChanges[iface._id]?.dhcp || iface.dhcp || 'no';
+      
+      if (mask === '32' && 
+          isAssigned && 
+          interfaceType.toLowerCase() === 'lan' && 
+          currentDhcp !== 'yes') {
+        console.log('Triggering DHCP modal for 32-bit subnet on LAN interface:', {
+          interface: iface.name,
+          ip: ip,
+          mask: mask,
+          assigned: isAssigned,
+          type: interfaceType,
+          currentDhcp: currentDhcp
+        });
+        
+        // Show DHCP server confirmation modal
+        setDhcpModalInterface(iface);
+        setDhcpModalIP(`${ip}/${mask}`);
+        setShowDhcpModal(true);
+      }
+    } else {
+      // Allow partial input during typing (e.g., "192.168.", "192.168.1.1/")
+      // Store the raw value to preserve user input
+      setInterfaceChanges(prev => ({
+        ...prev,
+        [iface._id]: {
+          ...prev[iface._id],
+          IPv4: value,
+          IPv4Mask: '' // Clear mask if input doesn't parse correctly
+        }
+      }));
+    }
+  };
+
+  const handleTemplateInterfaceEdit = (ifaceName, field, value) => {
+    setTemplateInterfaceChanges(prev => ({
+      ...prev,
+      [ifaceName]: {
+        ...prev[ifaceName],
+        [field]: value
+      }
+    }));
+  };
+
+  // Handle DHCP server confirmation
+  const handleDhcpConfirmation = (enableDhcp) => {
+    if (enableDhcp && dhcpModalInterface) {
+      console.log('Enabling DHCP server for interface:', dhcpModalInterface.name);
+      
+      // Generate DHCP configuration automatically
+      const ip = dhcpModalIP.split('/')[0];
+      const ipParts = ip.split('.');
+      const networkBase = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
+      
+      // Auto-generate DHCP pool based on the IP address
+      const dhcpConfig = {
+        dhcp: 'yes',
+        dhcpStartIP: `${networkBase}.100`,
+        dhcpEndIP: `${networkBase}.200`,
+        dhcpLeaseTime: '12h',
+        dhcpDNS: '8.8.8.8,8.8.4.4'
+      };
+      
+      console.log('Auto-generated DHCP configuration:', dhcpConfig);
+      
+      // Update interface changes with DHCP configuration
+      setInterfaceChanges(prev => ({
+        ...prev,
+        [dhcpModalInterface._id]: {
+          ...prev[dhcpModalInterface._id],
+          ...dhcpConfig
+        }
+      }));
+    }
+    
+    // Close the modal
+    setShowDhcpModal(false);
+    setDhcpModalInterface(null);
+    setDhcpModalIP('');
+  };
+
+  const syncDeviceConfig = async () => {
+    setSyncingConfig(true);
+    setError(null);
+    
+    try {
+      console.log('Starting device configuration sync...');
+
+      // Prepare configuration data - include any pending changes or current config
+      let configData = {
+        action: 'sync-config',
+        timestamp: new Date().toISOString()
+      };
+
+      // Include interface changes if any exist
+      if (Object.keys(interfaceChanges).length > 0 && device?.interfaces) {
+        const updatedInterfaces = device.interfaces.map(iface => ({
+          ...iface,
+          ...interfaceChanges[iface._id]
+        }));
+        configData.interfaces = updatedInterfaces;
+        console.log('Including interface changes in sync:', interfaceChanges);
+      } else {
+        // If no changes, just trigger a general sync
+        configData.forceSync = true;
+      }
+
+      console.log('Sending sync config data:', configData);
+
+      const response = await apiCall(`/api/devices/${deviceId}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          method: 'sync',
+          entity: 'agent',
+          message: 'sync-config',
+          data: configData
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Sync failed: ${response.status} - ${errorText}`);
+      }
+
+      console.log('Device configuration sync command sent successfully');
+      
+      // Update device sync status immediately
+      setDevice(prevDevice => ({
+        ...prevDevice,
+        sync: {
+          ...prevDevice?.sync,
+          state: 'syncing'
+        }
+      }));
+      
+      // Show success message
+      alert('Configuration sync initiated successfully!\n\nThe device is synchronizing its configuration. This may take a few moments.');
+      
+      // Clear interface changes if they were synced
+      if (Object.keys(interfaceChanges).length > 0) {
+        setInterfaceChanges({});
+        setEditingInterface(null);
+      }
+      
+      // Wait a moment then refresh device information
+      setTimeout(() => {
+        fetchDeviceInfo(true);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Configuration sync failed:', error);
+      setError(error.message || 'Configuration sync failed');
+      
+      // Show error message
+      alert(`Configuration sync failed: ${error.message}\n\nPlease try again or check the device connection.`);
+    } finally {
+      setSyncingConfig(false);
+    }
+  };
+
+  const updateDevice = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Check what needs to be updated
+      const hasBasicChanges = (deviceName !== (device?.name || '')) || 
+                              (description !== (device?.description || ''));
+      const hasInterfaceChanges = Object.keys(interfaceChanges).length > 0;
+      const hasTemplateChanges = Object.keys(templateInterfaceChanges).length > 0;
+
+      console.log('Update check:', {
+        hasBasicChanges,
+        hasInterfaceChanges,
+        hasTemplateChanges,
+        interfaceChanges,
+        deviceName,
+        description,
+        currentDeviceName: device?.name,
+        currentDescription: device?.description
+      });
+
+      // Prepare update data combining basic info and interface changes
+      const shouldUpdateDevice = hasBasicChanges || hasInterfaceChanges;
+
+      if (shouldUpdateDevice) {
+        // Prepare the complete device data
+        let deviceUpdateData = {
+          name: deviceName,
+          description: description
+        };
+
+        // Add interface data if there are interface changes
+        if (hasInterfaceChanges && device?.interfaces) {
+          const updatedInterfaces = device.interfaces.map(iface => {
+            const changes = interfaceChanges[iface._id] || {};
+            const updatedInterface = { ...iface, ...changes };
+            
+            console.log('Processing interface update:', {
+              interfaceId: iface._id,
+              interfaceName: iface.name,
+              originalIPv4: iface.IPv4,
+              originalMask: iface.IPv4Mask,
+              changes: changes,
+              updatedIPv4: updatedInterface.IPv4,
+              updatedMask: updatedInterface.IPv4Mask
+            });
+            
+            return updatedInterface;
+          });
+          deviceUpdateData.interfaces = updatedInterfaces;
+          console.log('Including interface configurations in update:', interfaceChanges);
+          console.log('Final interfaces data:', updatedInterfaces);
+        }
+
+        console.log('Sending device update data to API:', deviceUpdateData);
+
+        const response = await apiCall(`/api/devices/${deviceId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(deviceUpdateData)
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API update failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorText
+          });
+          throw new Error(`Device update failed: ${response.status} - ${errorText}`);
+        }
+
+        const responseData = await response.json();
+        console.log('Device updated successfully in database, response:', responseData);
+      }
+
+      // Handle template interface changes
+      if (hasTemplateChanges) {
+        console.log('Template interface changes saved:', templateInterfaceChanges);
+      }
+
+      // Show appropriate success message
+      let message = 'Device updated successfully!';
+      if (hasInterfaceChanges && !hasBasicChanges) {
+        message = 'Interface configurations saved to database successfully!';
+      } else if (hasInterfaceChanges && hasBasicChanges) {
+        message = 'Device information and interface configurations saved to database successfully!';
+      } else if (!hasInterfaceChanges && !hasBasicChanges && !hasTemplateChanges) {
+        message = 'No changes detected.';
+      }
+      
+      // Clear all changes only after successful update
+      setInterfaceChanges({});
+      setTemplateInterfaceChanges({});
+      setEditingInterface(null);
+      
+      // Immediately refresh device information to show updated data
+      await fetchDeviceInfo(true);
+      
+      alert(message);
+
+    } catch (error) {
+      console.error('Device update failed:', error);
+      setError(error.message || 'Device update failed');
+      
+      // Don't clear changes if update failed, so user can retry
+      // setInterfaceChanges({});
+      // setTemplateInterfaceChanges({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startDevice = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('Starting device vRouter functionality...');
+
+      // First check if device is connected
+      if (!device?.isConnected) {
+        throw new Error('Device is not connected. Please ensure the device is online before starting vRouter.');
+      }
+
+      // Check if there are pending interface changes
+      if (Object.keys(interfaceChanges).length > 0) {
+        const confirmStart = window.confirm(
+          'There are unsaved interface configuration changes. ' +
+          'Do you want to update the device configuration first before starting vRouter?'
         );
+        
+        if (confirmStart) {
+          // First update the device configuration
+          await updateDevice();
+          // Wait a moment for configuration to apply
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
+      // Prepare vRouter start command
+      const startData = {
+        method: 'start',
+        entity: 'agent',
+        message: 'start-router'
+      };
+
+      console.log('Sending vRouter start command:', startData);
+
+      const response = await apiCall(`/api/devices/${deviceId}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(startData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Start vRouter failed: ${response.status} - ${errorText}`);
+      }
+
+      console.log('vRouter start command sent successfully');
+      
+      // Immediately update local device state to reflect vRouter running and synced status
+      setDevice(prevDevice => {
+        const updatedDevice = {
+          ...prevDevice,
+          status: 'running',
+          isSynced: true,
+          configSynced: true,
+          syncStatus: 'synced'
+        };
+        console.log('Updated device state after start:', updatedDevice);
+        return updatedDevice;
+      });
+      
+      // Show success message
+      alert('vRouter start command sent successfully!\n\nThe device is now activating the vRouter functionality. This may take a few moments.');
+
+      // Clear interface changes as they should now be applied
+      setInterfaceChanges({});
+      setTemplateInterfaceChanges({});
+
+      // Refresh device information after a delay to see status updates
+      setTimeout(() => {
+        fetchDeviceInfo(true);
+      }, 5000);
+
+    } catch (error) {
+      console.error('Start vRouter failed:', error);
+      setError(error.message || 'Failed to start vRouter');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stopDevice = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('Stopping device vRouter functionality...');
+
+      // First check if device is connected
+      if (!device?.isConnected) {
+        throw new Error('Device is not connected. Cannot communicate with offline device.');
+      }
+
+      // Confirm before stopping
+      const confirmStop = window.confirm(
+        'Are you sure you want to stop the vRouter functionality?\n\n' +
+        'This will disable routing services on the device. ' +
+        'The device will remain connected but routing functions will be stopped.'
+      );
+      
+      if (!confirmStop) {
+        return;
+      }
+
+      // Prepare vRouter stop command
+      const stopData = {
+        method: 'stop',
+        entity: 'agent',
+        message: 'stop-router'
+      };
+
+      console.log('Sending vRouter stop command:', stopData);
+
+      const response = await apiCall(`/api/devices/${deviceId}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(stopData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Stop vRouter failed: ${response.status} - ${errorText}`);
+      }
+
+      console.log('vRouter stop command sent successfully');
+      
+      // Immediately update local device state to reflect vRouter stopped but still synced
+      setDevice(prevDevice => {
+        const updatedDevice = {
+          ...prevDevice,
+          status: 'stopped',
+          isSynced: true,
+          configSynced: true,
+          syncStatus: 'synced'
+        };
+        console.log('Updated device state after stop:', updatedDevice);
+        return updatedDevice;
+      });
+      
+      // Show success message
+      alert('vRouter stop command sent successfully!\n\nThe device is now deactivating the vRouter functionality. This may take a few moments.');
+
+      // Refresh device information after a delay to see status updates
+      setTimeout(() => {
+        fetchDeviceInfo(true);
+      }, 5000);
+
+    } catch (error) {
+      console.error('Stop vRouter failed:', error);
+      setError(error.message || 'Failed to stop vRouter');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -867,19 +1208,141 @@ const DeviceInfo = () => {
     <div className="device-info-page">
       {/* Header */}
       <div className="page-header mb-4">
-        <Button variant="outline-secondary" onClick={() => navigate('/devices')} className="mb-3">
-          <FaArrowLeft className="me-2" />
-          Back to Devices
-        </Button>
-        
-        {/* Device Info Header - Icon, Name, Description in one line */}
+        {/* Combined header line: Back button + Device info */}
         <div className="d-flex align-items-center mb-3 flex-wrap">
+          <Button variant="outline-secondary" onClick={() => navigate('/devices')} className="me-3">
+            <FaArrowLeft className="me-2" />
+            Back to Devices
+          </Button>
+          
           <FaServer className="me-2 text-primary flex-shrink-0" style={{fontSize: '1.5rem'}} />
           <h2 className="mb-0 me-3 flex-shrink-0">{deviceName || device?.name || 'Unknown Device'}</h2>
           {(description || device?.description) && (
             <span className="text-muted" style={{fontStyle: 'italic'}}>
               {description || device?.description}
             </span>
+          )}
+        </div>
+        
+        {/* Update Device, Start Device, Stop Device, and Sync Device Config Buttons */}
+        <div className="mb-3">
+          <Button 
+            variant="primary" 
+            onClick={updateDevice}
+            disabled={loading || (
+              deviceName === (device?.name || '') &&
+              description === (device?.description || '') &&
+              Object.keys(interfaceChanges).length === 0 &&
+              Object.keys(templateInterfaceChanges).length === 0
+            )}
+            className="me-2"
+          >
+            <FaSave className="me-2" />
+            {loading ? 'Updating...' : 'Update Device'}
+          </Button>
+          
+          <Button 
+            variant="success" 
+            onClick={startDevice}
+            disabled={loading || !device?.isConnected || device?.state === 'running'}
+            className="me-2"
+            title={
+              !device?.isConnected 
+                ? 'Device must be connected to start vRouter' 
+                : device?.state === 'running'
+                ? 'vRouter is already running'
+                : 'Start vRouter functionality'
+            }
+          >
+            <FaPlay className="me-2" />
+            {loading ? 'Starting...' : 'Start Device'}
+          </Button>
+
+          <Button 
+            variant="warning" 
+            onClick={stopDevice}
+            disabled={loading || !device?.isConnected || device?.state !== 'running'}
+            className="me-2"
+            title={
+              !device?.isConnected 
+                ? 'Device must be connected to stop vRouter' 
+                : device?.state !== 'running'
+                ? 'vRouter is not running'
+                : 'Stop vRouter functionality'
+            }
+          >
+            <FaStop className="me-2" />
+            {loading ? 'Stopping...' : 'Stop Device'}
+          </Button>
+
+          <Button 
+            variant="info" 
+            onClick={syncDeviceConfig}
+            disabled={loading || !device?.isConnected || syncingConfig}
+            className="me-2"
+            title={
+              !device?.isConnected 
+                ? 'Device must be connected to sync configuration' 
+                : syncingConfig
+                ? 'Configuration sync in progress'
+                : 'Synchronize device configuration'
+            }
+          >
+            <FaSync className={`me-2 ${syncingConfig ? 'fa-spin' : ''}`} />
+            {syncingConfig ? 'Syncing...' : 'Sync'}
+          </Button>
+
+          {/* Device Status Indicator */}
+          <div className="d-inline-block me-2">
+            <Badge bg={device?.isApproved ? 'success' : 'secondary'} className="me-1">
+              {device?.isApproved ? 'Approved' : 'Not Approved'}
+            </Badge>
+            <Badge bg={device?.isConnected ? 'success' : 'secondary'} className="me-1">
+              {device?.isConnected ? 'Connected' : 'Offline'}
+            </Badge>
+            <Badge 
+              bg={
+                device?.sync?.state === 'synced' || 
+                device?.isSynced || 
+                device?.configSynced || 
+                device?.syncStatus === 'synced' 
+                  ? 'success' 
+                  : syncingConfig || device?.sync?.state === 'syncing'
+                    ? 'warning' 
+                    : 'secondary'
+              } 
+              className="me-1"
+            >
+              {device?.sync?.state === 'synced' || 
+               device?.isSynced || 
+               device?.configSynced || 
+               device?.syncStatus === 'synced' 
+                ? 'Synced' 
+                : syncingConfig || device?.sync?.state === 'syncing'
+                  ? 'Syncing...' 
+                  : 'Not Synced'
+              }
+            </Badge>
+            <Badge bg={device?.state === 'running' ? 'success' : 'danger'}>
+              vRouter: {device?.state === 'running' ? 'Running' : 'Not Running'}
+            </Badge>
+          </div>
+          
+          {(Object.keys(interfaceChanges).length > 0 || 
+            Object.keys(templateInterfaceChanges).length > 0 ||
+            deviceName !== (device?.name || '') ||
+            description !== (device?.description || '')) && (
+            <small className="text-muted">
+              Changes pending: {
+                [
+                  (deviceName !== (device?.name || '') || description !== (device?.description || '')) ? 'basic info' : null,
+                  Object.keys(interfaceChanges).length > 0 ? `${Object.keys(interfaceChanges).length} interface(s)` : null,
+                  Object.keys(templateInterfaceChanges).length > 0 ? `${Object.keys(templateInterfaceChanges).length} template interface(s)` : null
+                ].filter(Boolean).join(', ')
+              }
+              {(Object.keys(interfaceChanges).length > 0 || Object.keys(templateInterfaceChanges).length > 0) && 
+                ' (interface changes require separate sync)'}
+            </small>
           )}
         </div>
         
@@ -1075,20 +1538,6 @@ const DeviceInfo = () => {
           </div>
         </Tab>
 
-        <Tab eventKey="statistics" title={<><FaChartLine className="me-1" />Statistics</>}>
-          <Card>
-            <Card.Header>
-              <FaChartLine className="me-2" />
-              Device Statistics
-            </Card.Header>
-            <Card.Body>
-              <Alert variant="info">
-                Device statistics will be displayed here.
-              </Alert>
-            </Card.Body>
-          </Card>
-        </Tab>
-
         <Tab eventKey="configuration" title={<><FaCog className="me-1" />Configuration</>}>
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center">
@@ -1135,6 +1584,20 @@ const DeviceInfo = () => {
             </Card.Header>
             <Card.Body>
               {renderConfigurationContent()}
+            </Card.Body>
+          </Card>
+        </Tab>
+
+        <Tab eventKey="statistics" title={<><FaChartLine className="me-1" />Statistics</>}>
+          <Card>
+            <Card.Header>
+              <FaChartLine className="me-2" />
+              Device Statistics
+            </Card.Header>
+            <Card.Body>
+              <Alert variant="info">
+                Device statistics will be displayed here.
+              </Alert>
             </Card.Body>
           </Card>
         </Tab>
@@ -1306,6 +1769,56 @@ const DeviceInfo = () => {
             }}
           >
             Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* DHCP Server Confirmation Modal */}
+      <Modal 
+        show={showDhcpModal} 
+        onHide={() => handleDhcpConfirmation(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Enable DHCP Server</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="text-center">
+            <FaNetworkWired size={48} className="mb-3 text-primary" />
+            <h5>Enable DHCP server on the interface</h5>
+            <p className="mb-3">
+              Do you want to enable DHCP server for this interface?
+            </p>
+            {dhcpModalInterface && (
+              <div className="bg-light p-3 rounded mb-3">
+                <div><strong>Interface:</strong> {dhcpModalInterface.name}</div>
+                <div><strong>Type:</strong> {dhcpModalInterface.type}</div>
+                <div><strong>IPv4:</strong> {dhcpModalIP}</div>
+              </div>
+            )}
+            <div className="text-muted small">
+              <p>This will automatically configure:</p>
+              <ul className="text-start">
+                <li>DHCP pool range (x.x.x.100 - x.x.x.200)</li>
+                <li>Lease time: 12 hours</li>
+                <li>DNS servers: 8.8.8.8, 8.8.4.4</li>
+              </ul>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="justify-content-center">
+          <Button 
+            variant="secondary" 
+            onClick={() => handleDhcpConfirmation(false)}
+            className="me-3"
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={() => handleDhcpConfirmation(true)}
+          >
+            Yes, Enable DHCP
           </Button>
         </Modal.Footer>
       </Modal>

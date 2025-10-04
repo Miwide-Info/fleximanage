@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import '../../styles/unified-table.css';
 
 // Organizations management page:
 // - Lists organizations (GET /organizations)
@@ -77,16 +78,20 @@ const AccountOrganizations = () => {
       {error && <div className="alert alert-danger py-2">{error}</div>}
       {loading ? <p>Loading...</p> : (
         orgs.length === 0 ? <p>No organizations.</p> : (
-          <div className="table-responsive">
-            <table className="table table-sm table-striped align-middle">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Group</th>
-                  <th>Encryption</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
+          <div className="unified-table-container">
+            <div className="unified-table-header">
+              <h5>Organizations</h5>
+            </div>
+            <div className="unified-table-responsive">
+              <table className="unified-table table table-striped align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Group</th>
+                    <th>Encryption</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
               <tbody>
                 {orgs.map(o => (
                   <tr key={o._id || o.id}>
@@ -98,6 +103,7 @@ const AccountOrganizations = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )
       )}

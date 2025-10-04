@@ -30,6 +30,7 @@ import Forbidden from './components/Forbidden';
 import Register from './pages/Register';
 import './styles/App.css';
 import './styles/layout.css';
+import './styles/unified-table.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

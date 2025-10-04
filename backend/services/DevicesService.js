@@ -181,7 +181,8 @@ class DevicesService {
     ]);
 
     retDevice.isConnected = connections.isConnected(retDevice.machineId);
-    retDevice.state = deviceStatus.getDeviceStatus(retDevice.machineId) || 'pending';
+    const deviceStatusObj = deviceStatus.getDeviceStatus(retDevice.machineId);
+    retDevice.state = deviceStatusObj?.state || 'pending';
 
     // pick interfaces
     let retInterfaces;

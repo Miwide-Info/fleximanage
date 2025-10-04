@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
+import '../../styles/unified-table.css';
 
 // Access Keys management: creates scoped access keys with role-based permissions.
 // Backend (OpenAPI) expects AccessTokenRequest: {
@@ -210,19 +211,23 @@ const AccountAccessKeys = () => {
       <p className="text-muted mb-2">Existing keys</p>
       {loading ? <p>Loading...</p> : (
         keys.length === 0 ? <p className="text-muted">No access keys yet.</p> : (
-          <div className="table-responsive">
-            <table className="table table-sm table-striped align-middle">
-              <thead>
-                <tr>
-                  <th style={{ minWidth: 120 }}>Name</th>
-                  <th style={{ minWidth: 260 }}>Key</th>
-                  <th>To</th>
-                  <th>Entity</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th style={{ width: 140 }}>Actions</th>
-                </tr>
-              </thead>
+          <div className="unified-table-container">
+            <div className="unified-table-header">
+              <h5>Access Keys</h5>
+            </div>
+            <div className="unified-table-responsive">
+              <table className="unified-table table table-striped align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th style={{ minWidth: 120 }}>Name</th>
+                    <th style={{ minWidth: 260 }}>Key</th>
+                    <th>To</th>
+                    <th>Entity</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th style={{ width: 140 }}>Actions</th>
+                  </tr>
+                </thead>
               <tbody>
                 {keys.slice(page * pageSize, page * pageSize + pageSize).map(k => {
                   const entityDisplay = k.to === 'account'
@@ -268,9 +273,10 @@ const AccountAccessKeys = () => {
                 })}
               </tbody>
             </table>
+            </div>
             {/* Pagination Footer */}
-            <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 small">
-              <div>
+            <div className="unified-table-footer">
+              <div className="pagination-info">
                 {(() => {
                   const total = keys.length;
                   const start = total === 0 ? 0 : page * pageSize + 1;
@@ -278,7 +284,7 @@ const AccountAccessKeys = () => {
                   return `Showing ${start} to ${end} of ${total} Results`;
                 })()}
               </div>
-              <div className="d-flex align-items-center gap-2">
+              <div className="pagination-controls">
                 <button className="btn btn-sm btn-outline-secondary" disabled={page === 0} onClick={() => setPage(0)}>First</button>
                 <button className="btn btn-sm btn-outline-secondary" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Back</button>
                 <span className="px-2 fw-bold">{page}</span>

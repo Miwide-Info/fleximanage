@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Badge, Button, Row, Col } from 'react-bootstrap';
 import { FaRoute, FaPlay, FaStop, FaEye } from 'react-icons/fa';
 import './Tunnels.css';
+import '../styles/unified-table.css';
 
 const Tunnels = () => {
   const [tunnels, setTunnels] = useState([]);
@@ -123,9 +124,12 @@ const Tunnels = () => {
         </Col>
       </Row>
 
-      <Card>
-        <Card.Body>
-          <Table responsive hover>
+      <Card className="unified-table-container">
+        <div className="unified-table-header">
+          <h5><FaRoute className="me-2" />Tunnel Management</h5>
+        </div>
+        <div className="unified-table-responsive">
+          <Table striped bordered hover responsive className="unified-table mb-0">
             <thead>
               <tr>
                 <th>ID</th>
@@ -174,7 +178,7 @@ const Tunnels = () => {
               ))}
             </tbody>
           </Table>
-        </Card.Body>
+        </div>
       </Card>
     </div>
   );

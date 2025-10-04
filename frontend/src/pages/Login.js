@@ -174,11 +174,15 @@ const Login = ({ onLogin }) => {
       }
 
       // Final login: backend returns token+refreshToken in body AND also in headers.
-      const headerToken = response.headers['refresh-jwt'] || response.headers['Refresh-JWT'];
       const bodyToken = response.data?.token;
-      const finalToken = headerToken || bodyToken;
+      const headerToken = response.headers['refresh-jwt'] || response.headers['Refresh-JWT'];
+      const finalToken = bodyToken || headerToken;
       if (finalToken) {
         localStorage.setItem('token', finalToken);
+        // Also store refresh token if available
+        if (response.data?.refreshToken) {
+          localStorage.setItem('refreshToken', response.data.refreshToken);
+        }
         onLogin(); // update parent auth state
         // Navigate explicitly to home to avoid blank content when current path is /login
         navigate('/home', { replace: true });
@@ -186,11 +190,24 @@ const Login = ({ onLogin }) => {
         setError('Login failed: No token received from server');
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('Login error details:', {
+        error: err,
+        message: err.message,
+        response: err.response,
+        responseData: err.response?.data,
+        responseStatus: err.response?.status,
+        responseHeaders: err.response?.headers,
+        config: err.config,
+        request: err.request
+      });
+      
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.status === 401) {
         setError('Invalid username or password');
+      } else if (!err.response) {
+        // Network error, possibly CORS, SSL, or proxy issue
+        setError('Network error: Unable to connect to server. Please check your connection.');
       } else {
         setError('Login failed. Please try again.');
       }

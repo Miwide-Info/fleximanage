@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Badge, Card, Row, Col, Alert, Form, ButtonGroup } from 'react-bootstrap';
+import { Button, Badge, Card, Row, Col, Alert, Form, ButtonGroup } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaPlay, FaStop, FaSync, FaTrash, FaInfoCircle, FaServer } from 'react-icons/fa';
+import { FaPlay, FaStop, FaSync, FaTrash, FaServer } from 'react-icons/fa';
 import './Devices.css';
 
 const Devices = () => {
@@ -13,6 +13,7 @@ const Devices = () => {
 
   useEffect(() => {
     fetchDevices();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Helper function to handle API calls with authentication
@@ -23,7 +24,10 @@ const Devices = () => {
       return null;
     }
 
-    const response = await fetch(url, {
+    // Ensure URL starts with /api for proper proxying
+    const apiUrl = url.startsWith('/api') ? url : `/api${url.startsWith('/') ? url : '/' + url}`;
+
+    const response = await fetch(apiUrl, {
       ...options,
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -61,26 +65,42 @@ const Devices = () => {
       console.log('Fetched devices:', data);
       
       // Transform the API data to match our component structure
-      const transformedDevices = data.map(device => ({
-        id: device._id || device.id,
-        name: device.name || 'Unknown Device',
-        type: device.type || 'Router',
-        hostname: device.hostname || 'N/A',
-        wanIPs: device.interfaces?.filter(iface => iface.type === 'WAN')
-          .map(iface => iface.IPv4 || iface.PublicIP)
-          .filter(ip => ip)
-          .join(', ') || 'N/A',
-        status: device.isApproved ? 'Approved' : 'Pending',
-        connection: device.isConnected ? 'Connected' : 'Not Connected',
-        pps: device.stats?.pps || 'N/A',
-        bps: device.stats?.bps || 'N/A',
-        vRouter: device.sync?.state || device.deviceState || 'Pending',
-        location: device.location || '',
-        lastSeen: device.lastSeen || '',
-        serial: device.serial || 'N/A',
-        description: device.description || '',
-        machineId: device.machineId || 'N/A'
-      }));
+      const transformedDevices = data.map(device => {
+        const transformed = {
+          id: device._id || device.id,
+          name: device.name || 'Unknown Device',
+          type: device.type || 'Router',
+          hostname: device.hostname || 'N/A',
+          wanIPs: device.interfaces?.filter(iface => iface.type === 'WAN')
+            .map(iface => iface.IPv4 || iface.PublicIP)
+            .filter(ip => ip)
+            .join(', ') || 'N/A',
+          status: device.isApproved ? 'Approved' : 'Pending',
+          connection: device.isConnected ? 'Connected' : 'Not Connected',
+          pps: device.stats?.pps || 'N/A',
+          bps: device.stats?.bps || 'N/A',
+          vRouter: device.state || device.sync?.state || device.deviceState || 'Unknown',
+          location: device.location || '',
+          lastSeen: device.lastSeen || '',
+          serial: device.serial || 'N/A',
+          description: device.description || '',
+          machineId: device.machineId || 'N/A'
+        };
+        
+        // Log device transformation for debugging
+        console.log('📱 Device transformed:', {
+          originalId: device._id,
+          transformedId: transformed.id,
+          name: transformed.name,
+          machineId: transformed.machineId,
+          vRouter: transformed.vRouter,
+          originalState: device.state,
+          originalStatus: device.status,
+          originalSync: device.sync?.state
+        });
+        
+        return transformed;
+      });
 
       setDevices(transformedDevices);
       setError(null);
@@ -110,6 +130,36 @@ const Devices = () => {
     return <Badge bg={variants[connection] || 'secondary'}>{connection}</Badge>;
   };
 
+  const getVRouterBadge = (vRouterStatus) => {
+    const statusText = vRouterStatus === 'running' ? 'Running' : 
+                      vRouterStatus === 'stopped' ? 'Not Running' :
+                      vRouterStatus === 'synced' ? 'Synced' :
+                      vRouterStatus === 'syncing' ? 'Syncing...' :
+                      vRouterStatus === 'starting' ? 'Starting...' :
+                      vRouterStatus === 'stopping' ? 'Stopping...' :
+                      vRouterStatus || 'Unknown';
+    
+    const variants = {
+      'running': 'success',
+      'Running': 'success',
+      'stopped': 'danger', 
+      'Not Running': 'danger',
+      'synced': 'info',
+      'Synced': 'info',
+      'syncing': 'warning',
+      'Syncing...': 'warning',
+      'starting': 'warning',
+      'Starting...': 'warning',
+      'stopping': 'warning',
+      'Stopping...': 'warning',
+      'pending': 'warning',
+      'Pending': 'warning'
+    };
+    
+    const bgColor = variants[vRouterStatus] || variants[statusText] || 'secondary';
+    return <Badge bg={bgColor}>{statusText}</Badge>;
+  };
+
   // Handle device selection
   const handleDeviceSelect = (deviceId, isSelected) => {
     const newSelection = new Set(selectedDevices);
@@ -133,49 +183,202 @@ const Devices = () => {
   // Device action handlers
   const handleStartDevice = async (deviceId) => {
     try {
+      console.log('🚀 Starting device:', deviceId);
+      
+      // Find the device to get its details for logging
+      const device = devices.find(d => d.id === deviceId);
+      console.log('📍 Device details:', {
+        id: deviceId,
+        name: device?.name,
+        machineId: device?.machineId,
+        currentStatus: device?.vRouter
+      });
+      
+      // Immediately update the UI to show starting status for this specific device
+      setDevices(prevDevices => 
+        prevDevices.map(d => 
+          d.id === deviceId 
+            ? { ...d, vRouter: 'starting' }
+            : d
+        )
+      );
+      
+      // Prepare vRouter start command with proper parameters
+      const startData = {
+        method: 'start',
+        entity: 'agent',
+        message: 'start-router'
+      };
+      
+      console.log('Sending vRouter start command:', startData);
+      
       const response = await apiCall(`/api/devices/${deviceId}/apply`, {
         method: 'POST',
-        body: JSON.stringify({ method: 'start' })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(startData)
       });
       
       if (response && response.ok) {
-        console.log('Device start command sent');
-        fetchDevices(); // Refresh device list
+        console.log('✅ Device start command sent successfully for device:', deviceId);
+        
+        // Wait a moment then refresh to see the updated status
+        setTimeout(() => {
+          console.log('🔄 Refreshing device list after start...');
+          fetchDevices();
+        }, 2000);
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Start device failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error('Error starting device:', error);
+      console.error('❌ Error starting device:', error);
+      
+      // Restore the original status on error
+      const originalDevice = devices.find(d => d.id === deviceId);
+      if (originalDevice) {
+        setDevices(prevDevices => 
+          prevDevices.map(d => 
+            d.id === deviceId 
+              ? { ...d, vRouter: originalDevice.vRouter }
+              : d
+          )
+        );
+      }
     }
   };
 
   const handleStopDevice = async (deviceId) => {
     try {
+      console.log('🛑 Stopping device:', deviceId);
+      
+      // Find the device to get its details for logging
+      const device = devices.find(d => d.id === deviceId);
+      console.log('📍 Device details:', {
+        id: deviceId,
+        name: device?.name,
+        machineId: device?.machineId,
+        currentStatus: device?.vRouter
+      });
+      
+      // Immediately update the UI to show stopping status for this specific device
+      setDevices(prevDevices => 
+        prevDevices.map(d => 
+          d.id === deviceId 
+            ? { ...d, vRouter: 'stopping' }
+            : d
+        )
+      );
+      
+      // Prepare vRouter stop command with proper parameters
+      const stopData = {
+        method: 'stop',
+        entity: 'agent',
+        message: 'stop-router'
+      };
+      
+      console.log('Sending vRouter stop command:', stopData);
+      
       const response = await apiCall(`/api/devices/${deviceId}/apply`, {
         method: 'POST',
-        body: JSON.stringify({ method: 'stop' })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(stopData)
       });
       
       if (response && response.ok) {
-        console.log('Device stop command sent');
-        fetchDevices(); // Refresh device list
+        console.log('✅ Device stop command sent successfully for device:', deviceId);
+        
+        // Wait a moment then refresh to see the updated status
+        setTimeout(() => {
+          console.log('🔄 Refreshing device list after stop...');
+          fetchDevices();
+        }, 2000);
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Stop device failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error('Error stopping device:', error);
+      console.error('❌ Error stopping device:', error);
+      
+      // Restore the original status on error
+      const originalDevice = devices.find(d => d.id === deviceId);
+      if (originalDevice) {
+        setDevices(prevDevices => 
+          prevDevices.map(d => 
+            d.id === deviceId 
+              ? { ...d, vRouter: originalDevice.vRouter }
+              : d
+          )
+        );
+      }
     }
   };
 
   const handleSyncDevice = async (deviceId) => {
     try {
+      console.log('🔄 Starting sync for device:', deviceId);
+      
+      // Find the device to get its details for logging
+      const device = devices.find(d => d.id === deviceId);
+      console.log('📍 Device details:', {
+        id: deviceId,
+        name: device?.name,
+        machineId: device?.machineId,
+        vRouterStatus: device?.vRouter
+      });
+      
+      // Immediately update the UI to show syncing status for this specific device
+      setDevices(prevDevices => 
+        prevDevices.map(d => 
+          d.id === deviceId 
+            ? { ...d, vRouter: 'syncing' }
+            : d
+        )
+      );
+      
       const response = await apiCall(`/api/devices/${deviceId}/apply`, {
         method: 'POST',
         body: JSON.stringify({ method: 'sync' })
       });
       
       if (response && response.ok) {
-        console.log('Device sync command sent');
-        fetchDevices(); // Refresh device list
+        console.log('✅ Device sync command sent successfully for device:', deviceId);
+        
+        // Wait a moment then refresh to see the updated status
+        setTimeout(() => {
+          console.log('🔄 Refreshing device list...');
+          fetchDevices();
+        }, 2000);
+      } else {
+        console.error('❌ Sync request failed:', response?.status, response?.statusText);
+        // Restore original status if sync failed
+        const originalDevice = devices.find(d => d.id === deviceId);
+        if (originalDevice) {
+          setDevices(prevDevices => 
+            prevDevices.map(d => 
+              d.id === deviceId 
+                ? { ...d, vRouter: originalDevice.vRouter }
+                : d
+            )
+          );
+        }
       }
     } catch (error) {
-      console.error('Error syncing device:', error);
+      console.error('❌ Error syncing device:', deviceId, error);
+      // Restore original status if sync failed
+      const originalDevice = devices.find(d => d.id === deviceId);
+      if (originalDevice) {
+        setDevices(prevDevices => 
+          prevDevices.map(d => 
+            d.id === deviceId 
+              ? { ...d, vRouter: originalDevice.vRouter }
+              : d
+          )
+        );
+      }
     }
   };
 
@@ -241,7 +444,7 @@ const Devices = () => {
                 <Button variant="success" size="sm" onClick={() => Array.from(selectedDevices).forEach(handleStartDevice)}>
                   <FaPlay className="me-1" />Start
                 </Button>
-                <Button variant="warning" size="sm" onClick={() => Array.from(selectedDevices).forEach(handleStopDevice)}>
+                <Button variant="danger" size="sm" onClick={() => Array.from(selectedDevices).forEach(handleStopDevice)}>
                   <FaStop className="me-1" />Stop
                 </Button>
                 <Button variant="info" size="sm" onClick={() => Array.from(selectedDevices).forEach(handleSyncDevice)}>
@@ -287,7 +490,7 @@ const Devices = () => {
                         onChange={(e) => handleDeviceSelect(device.id, e.target.checked)}
                       />
                     </Col>
-                    <Col md={5}>
+                    <Col md={4}>
                       <div className="d-flex align-items-center mb-2">
                         <FaServer className="me-2 text-primary" />
                         <Link to={`/devices/${device.id}`} className="text-decoration-none">
@@ -301,7 +504,7 @@ const Devices = () => {
                       <div className="device-stats">
                         <div><strong>PPS:</strong> {device.pps}</div>
                         <div><strong>BPS:</strong> {device.bps}</div>
-                        <div><strong>vRouter:</strong> <Badge bg="warning">{device.vRouter}</Badge></div>
+                        <div><strong>vRouter:</strong> {getVRouterBadge(device.vRouter)}</div>
                       </div>
                       {device.description && (
                         <div className="mt-2">
@@ -317,14 +520,16 @@ const Devices = () => {
                         <div><strong>Machine ID:</strong> <small className="text-muted">{device.machineId}</small></div>
                       </div>
                     </Col>
-                    <Col md={2}>
-                      <div className="action-buttons text-end">
-                        <ButtonGroup vertical className="w-100">
+                    <Col md={3}>
+                      <div className="action-buttons">
+                        <div className="d-flex gap-1 justify-content-end">
                           <Button
                             variant="success"
                             size="sm"
                             onClick={() => handleStartDevice(device.id)}
-                            disabled={device.connection === 'Connected'}
+                            disabled={device.connection !== 'Connected' || device.vRouter === 'starting' || device.vRouter === 'running'}
+                            title="Start Device"
+                            className="px-2"
                           >
                             <FaPlay className="me-1" />Start
                           </Button>
@@ -332,7 +537,9 @@ const Devices = () => {
                             variant="warning"
                             size="sm"
                             onClick={() => handleStopDevice(device.id)}
-                            disabled={device.connection === 'Not Connected'}
+                            disabled={device.connection !== 'Connected' || device.vRouter === 'stopping' || device.vRouter === 'stopped'}
+                            title="Stop Device"
+                            className="px-2"
                           >
                             <FaStop className="me-1" />Stop
                           </Button>
@@ -340,6 +547,8 @@ const Devices = () => {
                             variant="info"
                             size="sm"
                             onClick={() => handleSyncDevice(device.id)}
+                            title="Sync Device"
+                            className="px-2"
                           >
                             <FaSync className="me-1" />Sync
                           </Button>
@@ -347,10 +556,12 @@ const Devices = () => {
                             variant="danger"
                             size="sm"
                             onClick={() => handleDeleteDevice(device.id)}
+                            title="Delete Device"
+                            className="px-2"
                           >
                             <FaTrash className="me-1" />Delete
                           </Button>
-                        </ButtonGroup>
+                        </div>
                       </div>
                     </Col>
                   </Row>
