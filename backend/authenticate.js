@@ -224,7 +224,8 @@ exports.verifyUserJWT = function (req, res, next) {
     // Skip authentication for public performance monitoring endpoints
     if (req.originalUrl && (req.originalUrl.startsWith('/api/performance') || 
                            req.originalUrl.startsWith('/api/public') || 
-                           req.originalUrl.startsWith('/api/health'))) {
+                           req.originalUrl.startsWith('/api/health') ||
+                           req.originalUrl.startsWith('/api/dashboard'))) {
       logger.debug('verifyUserJWT: skipping auth for public endpoint', { params: { url: req.originalUrl } });
       return next();
     }

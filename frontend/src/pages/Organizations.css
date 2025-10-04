@@ -7,10 +7,33 @@
 }
 
 .action-buttons {
-  display: flex;
+  display: flex !important;
   gap: 5px;
+  flex-wrap: nowrap !important;
+  flex-direction: row !important;
+  justify-content: center;
+  align-items: center;
+  min-width: 160px;
 }
 
 .action-buttons .btn {
   padding: 0.25rem 0.5rem;
+  min-width: 35px;
+  white-space: nowrap;
+  display: inline-block !important;
+}
+
+/* Specific override for organizations table */
+.organizations-page .action-buttons {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 5px !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.organizations-page .action-buttons .btn {
+  display: inline-block !important;
+  margin: 0 !important;
 }

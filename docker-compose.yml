@@ -167,6 +167,9 @@ services:
       - ./backend/constants:/app/backend/constants # Constants
       - ./backend/limiters:/app/backend/limiters   # Rate limiters
       - ./backend/migrations:/app/backend/migrations # Database migrations
+      # Core backend files
+      - ./backend/authenticate.js:/app/backend/authenticate.js  # Authentication middleware
+      - ./backend/expressserver.js:/app/backend/expressserver.js  # Express server setup
     depends_on:
       mongo-setup:
         condition: service_completed_successfully

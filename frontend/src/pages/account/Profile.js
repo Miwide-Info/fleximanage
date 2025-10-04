@@ -119,23 +119,23 @@ export default function AccountProfile () {
       {acct && !loading && (
         <div className="card mb-3">
           <div className="card-body p-4">
-            <div className="row g-4">
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label className="form-label"><strong>Company Name :</strong></label>
-                  <div className="form-control-plaintext">{acct.name || '-'}</div>
+            <div className="row g-3">
+              <div className="col-12">
+                <div className="d-flex align-items-center mb-3">
+                  <strong className="me-2">Company Name :</strong>
+                  <span>{acct.name || '-'}</span>
                 </div>
               </div>
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label className="form-label"><strong>Country :</strong></label>
-                  <div className="form-control-plaintext">{acct.country || '-'}</div>
+              <div className="col-12">
+                <div className="d-flex align-items-center mb-3">
+                  <strong className="me-2">Country :</strong>
+                  <span>{acct.country || '-'}</span>
                 </div>
               </div>
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label className="form-label"><strong>Force Two-Factor-authenticator :</strong></label>
-                  <div className="form-control-plaintext">{acct.forceMfa ? 'Yes' : 'No'}</div>
+              <div className="col-12">
+                <div className="d-flex align-items-center mb-3">
+                  <strong className="me-2">Force Two-Factor-authenticator :</strong>
+                  <span>{acct.forceMfa ? 'Yes' : 'No'}</span>
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Badge, Button, Alert, Spinner, Tab, Tabs, Form, Modal, Dropdown, Table } from 'react-bootstrap';
-import { FaArrowLeft, FaServer, FaNetworkWired, FaChartLine, FaCog, FaSave, FaMicrochip, FaChevronDown, FaSync, FaSortUp, FaSortDown, FaPlay, FaStop } from 'react-icons/fa';
+import { FaArrowLeft, FaServer, FaNetworkWired, FaChartLine, FaCog, FaSave, FaMicrochip, FaChevronDown, FaSync, FaSortUp, FaSortDown, FaPlay, FaStop, FaCheck, FaTimes } from 'react-icons/fa';
 import './DeviceInfo.css';
 import '../styles/unified-table.css';
 
@@ -714,19 +714,21 @@ const DeviceInfo = () => {
         }
       }));
       
-      // Check if this is a LAN interface with assigned=yes, type=lan, and 32-bit subnet mask
-      // Only show DHCP modal if these conditions are met and DHCP is not already enabled
+      // Check if this is a LAN interface with assigned=yes and suitable for DHCP server
+      // Show DHCP modal for LAN interfaces with valid subnet configurations
       const isAssigned = interfaceChanges[iface._id]?.isAssigned !== undefined 
         ? interfaceChanges[iface._id]?.isAssigned 
         : iface.isAssigned;
       const interfaceType = interfaceChanges[iface._id]?.type || iface.type || '';
       const currentDhcp = interfaceChanges[iface._id]?.dhcp || iface.dhcp || 'no';
       
-      if (mask === '32' && 
+      // Show DHCP modal for LAN interfaces that are assigned and have valid network ranges
+      // This includes /24, /25, /26, /27, /28, /29, /30 subnet masks (but not /32 which is single host)
+      if (mask && mask !== '32' && parseInt(mask) >= 8 && parseInt(mask) <= 30 && 
           isAssigned && 
           interfaceType.toLowerCase() === 'lan' && 
           currentDhcp !== 'yes') {
-        console.log('Triggering DHCP modal for 32-bit subnet on LAN interface:', {
+        console.log('Triggering DHCP modal for LAN interface with network range:', {
           interface: iface.name,
           ip: ip,
           mask: mask,
@@ -754,31 +756,52 @@ const DeviceInfo = () => {
     }
   };
 
-  const handleTemplateInterfaceEdit = (ifaceName, field, value) => {
-    setTemplateInterfaceChanges(prev => ({
-      ...prev,
-      [ifaceName]: {
-        ...prev[ifaceName],
-        [field]: value
-      }
-    }));
-  };
-
   // Handle DHCP server confirmation
   const handleDhcpConfirmation = (enableDhcp) => {
     if (enableDhcp && dhcpModalInterface) {
       console.log('Enabling DHCP server for interface:', dhcpModalInterface.name);
       
-      // Generate DHCP configuration automatically
+      // Generate DHCP configuration automatically based on subnet
       const ip = dhcpModalIP.split('/')[0];
+      const mask = dhcpModalIP.split('/')[1];
       const ipParts = ip.split('.');
       const networkBase = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
       
-      // Auto-generate DHCP pool based on the IP address
+      // Calculate appropriate DHCP range based on subnet mask
+      let dhcpStartIP, dhcpEndIP;
+      const maskInt = parseInt(mask);
+      
+      if (maskInt >= 24) {
+        // /24, /25, /26, /27, /28, /29, /30 subnets
+        const hostBits = 32 - maskInt;
+        const totalHosts = Math.pow(2, hostBits) - 2; // Subtract network and broadcast
+        
+        if (totalHosts > 100) {
+          // Large networks: use .100-.200 range
+          dhcpStartIP = `${networkBase}.100`;
+          dhcpEndIP = `${networkBase}.200`;
+        } else if (totalHosts > 20) {
+          // Medium networks: use second half of range
+          const startHost = Math.floor(totalHosts / 2) + 1;
+          const endHost = totalHosts;
+          dhcpStartIP = `${networkBase}.${startHost}`;
+          dhcpEndIP = `${networkBase}.${endHost}`;
+        } else {
+          // Small networks: use most of available range
+          dhcpStartIP = `${networkBase}.2`;
+          dhcpEndIP = `${networkBase}.${totalHosts}`;
+        }
+      } else {
+        // Larger subnets (/16, /8, etc.)
+        dhcpStartIP = `${networkBase}.100`;
+        dhcpEndIP = `${networkBase}.200`;
+      }
+      
+      // Auto-generate DHCP pool based on the IP address and subnet
       const dhcpConfig = {
         dhcp: 'yes',
-        dhcpStartIP: `${networkBase}.100`,
-        dhcpEndIP: `${networkBase}.200`,
+        dhcpStartIP: dhcpStartIP,
+        dhcpEndIP: dhcpEndIP,
         dhcpLeaseTime: '12h',
         dhcpDNS: '8.8.8.8,8.8.4.4'
       };
@@ -1699,16 +1722,43 @@ const DeviceInfo = () => {
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>IPv4 Address</Form.Label>
+                    <Form.Label>
+                      IPv4 Address
+                      <small className="text-muted ms-2">(IP/Mask format)</small>
+                    </Form.Label>
                     <Form.Control
                       type="text"
-                      placeholder="192.168.1.100"
+                      placeholder="192.168.1.1/24"
                       value={interfaceChanges[editingInterface._id]?.IPv4 || editingInterface.IPv4 || ''}
                       onChange={(e) => handleInterfaceEdit(editingInterface, 'IPv4', e.target.value)}
                     />
+                    <Form.Text className="text-muted">
+                      Enter IPv4 address with subnet mask. For LAN interfaces with suitable subnet masks (/8-/30), 
+                      DHCP server configuration will be offered automatically.
+                    </Form.Text>
                   </Form.Group>
                 </Col>
               </Row>
+              
+              {editingInterface?.type === 'LAN' && (
+                <Alert variant="info" className="mt-3">
+                  <h6><FaNetworkWired className="me-2" />LAN Interface Configuration</h6>
+                  <p className="mb-2">
+                    For LAN interfaces, you can configure IPv4 addresses with network ranges.
+                    When you enter an IPv4 address with a suitable subnet mask (/8 to /30), 
+                    the system will automatically offer to configure a DHCP server.
+                  </p>
+                  <div className="small text-muted">
+                    <strong>Examples:</strong>
+                    <ul className="mb-0">
+                      <li><code>192.168.1.1/24</code> - Class C network (254 hosts)</li>
+                      <li><code>10.0.0.1/16</code> - Class B network (65,534 hosts)</li>
+                      <li><code>172.16.0.1/28</code> - Small network (14 hosts)</li>
+                    </ul>
+                  </div>
+                </Alert>
+              )}
+              
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
@@ -1778,31 +1828,97 @@ const DeviceInfo = () => {
         show={showDhcpModal} 
         onHide={() => handleDhcpConfirmation(false)}
         centered
+        size="lg"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Enable DHCP Server</Modal.Title>
+          <Modal.Title>
+            <FaNetworkWired className="me-2" />
+            Enable DHCP Server
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="text-center">
-            <FaNetworkWired size={48} className="mb-3 text-primary" />
-            <h5>Enable DHCP server on the interface</h5>
-            <p className="mb-3">
-              Do you want to enable DHCP server for this interface?
-            </p>
+            <div className="mb-4">
+              <FaNetworkWired size={48} className="mb-3 text-primary" />
+              <h5>Enable DHCP server on the LAN interface</h5>
+              <p className="mb-3">
+                Do you want to automatically configure a DHCP server for this LAN interface?
+              </p>
+            </div>
+            
             {dhcpModalInterface && (
               <div className="bg-light p-3 rounded mb-3">
-                <div><strong>Interface:</strong> {dhcpModalInterface.name}</div>
-                <div><strong>Type:</strong> {dhcpModalInterface.type}</div>
-                <div><strong>IPv4:</strong> {dhcpModalIP}</div>
+                <div className="row text-start">
+                  <div className="col-md-6">
+                    <div><strong>Interface:</strong> {dhcpModalInterface.name}</div>
+                    <div><strong>Type:</strong> {dhcpModalInterface.type}</div>
+                    <div><strong>Network:</strong> {dhcpModalIP}</div>
+                  </div>
+                  <div className="col-md-6">
+                    {(() => {
+                      const ip = dhcpModalIP.split('/')[0];
+                      const mask = dhcpModalIP.split('/')[1];
+                      const maskInt = parseInt(mask);
+                      const hostBits = 32 - maskInt;
+                      const totalHosts = Math.pow(2, hostBits) - 2;
+                      const ipParts = ip.split('.');
+                      const networkBase = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
+                      
+                      let dhcpStart, dhcpEnd;
+                      if (maskInt >= 24) {
+                        if (totalHosts > 100) {
+                          dhcpStart = `${networkBase}.100`;
+                          dhcpEnd = `${networkBase}.200`;
+                        } else if (totalHosts > 20) {
+                          const startHost = Math.floor(totalHosts / 2) + 1;
+                          dhcpStart = `${networkBase}.${startHost}`;
+                          dhcpEnd = `${networkBase}.${totalHosts}`;
+                        } else {
+                          dhcpStart = `${networkBase}.2`;
+                          dhcpEnd = `${networkBase}.${totalHosts}`;
+                        }
+                      } else {
+                        dhcpStart = `${networkBase}.100`;
+                        dhcpEnd = `${networkBase}.200`;
+                      }
+                      
+                      return (
+                        <>
+                          <div><strong>Available Hosts:</strong> {totalHosts}</div>
+                          <div><strong>DHCP Range:</strong> {dhcpStart} - {dhcpEnd}</div>
+                          <div><strong>Lease Time:</strong> 12 hours</div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
             )}
+            
             <div className="text-muted small">
-              <p>This will automatically configure:</p>
-              <ul className="text-start">
-                <li>DHCP pool range (x.x.x.100 - x.x.x.200)</li>
-                <li>Lease time: 12 hours</li>
-                <li>DNS servers: 8.8.8.8, 8.8.4.4</li>
-              </ul>
+              <p><strong>This will automatically configure:</strong></p>
+              <div className="row text-start">
+                <div className="col-md-6">
+                  <ul>
+                    <li>DHCP pool range based on network size</li>
+                    <li>Lease time: 12 hours</li>
+                    <li>DNS servers: 8.8.8.8, 8.8.4.4</li>
+                  </ul>
+                </div>
+                <div className="col-md-6">
+                  <ul>
+                    <li>Gateway: Interface IP address</li>
+                    <li>Subnet mask: From network configuration</li>
+                    <li>Domain name: Local network</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="alert alert-info mt-3">
+                <small>
+                  <strong>Note:</strong> DHCP server will only be enabled if the interface is assigned and configured as LAN type.
+                  The DHCP range is calculated to avoid conflicts with the interface IP address.
+                </small>
+              </div>
             </div>
           </div>
         </Modal.Body>
@@ -1812,13 +1928,15 @@ const DeviceInfo = () => {
             onClick={() => handleDhcpConfirmation(false)}
             className="me-3"
           >
+            <FaTimes className="me-1" />
             Cancel
           </Button>
           <Button 
             variant="primary" 
             onClick={() => handleDhcpConfirmation(true)}
           >
-            Yes, Enable DHCP
+            <FaCheck className="me-1" />
+            Yes, Enable DHCP Server
           </Button>
         </Modal.Footer>
       </Modal>

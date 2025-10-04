@@ -204,13 +204,21 @@ const Organizations = () => {
                     <td>{org.vxlanPort || '4789'}</td>
                     <td>{org.tunnelRange ? `${org.tunnelRange}/16` : '-'}</td>
                     <td>
-                      <div className="action-buttons">
+                      <div className="action-buttons" style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        flexWrap: 'nowrap',
+                        gap: '5px',
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                      }}>
                         <Button
                           variant="outline-success"
                           size="sm"
                           onClick={() => handleSetOrganization(org._id || org.id)}
                           title="Set Organization"
                           disabled={settingOrg === (org._id || org.id)}
+                          style={{ minWidth: '35px' }}
                         >
                           {settingOrg === (org._id || org.id) ? '...' : <FaCheck />}
                         </Button>
@@ -219,6 +227,7 @@ const Organizations = () => {
                           size="sm"
                           onClick={() => handleViewOrganization(org._id || org.id)}
                           title="View"
+                          style={{ minWidth: '35px' }}
                         >
                           <FaEye />
                         </Button>
@@ -227,6 +236,7 @@ const Organizations = () => {
                           size="sm"
                           onClick={() => handleEditOrganization(org._id || org.id)}
                           title="Edit"
+                          style={{ minWidth: '35px' }}
                         >
                           <FaEdit />
                         </Button>
@@ -235,6 +245,7 @@ const Organizations = () => {
                           size="sm"
                           onClick={() => handleDeleteOrganization(org._id || org.id)}
                           title="Delete"
+                          style={{ minWidth: '35px' }}
                         >
                           <FaTrash />
                         </Button>

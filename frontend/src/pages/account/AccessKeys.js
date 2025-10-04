@@ -243,7 +243,7 @@ const AccountAccessKeys = () => {
                       <td>{entityDisplay || '-'}</td>
                       <td>{k.role || '-'}</td>
                       <td>{k.isValid ? 'Active' : 'Inactive'}</td>
-                      <td className="d-flex flex-wrap gap-1">
+                      <td className="d-flex flex-column gap-1">
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-secondary"

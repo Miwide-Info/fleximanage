@@ -216,18 +216,20 @@ const Tokens = () => {
                     <td className="font-monospace" style={{ wordBreak: 'break-all', maxWidth: 400 }}>{t.token || <span className="text-muted">(hidden)</span>}</td>
                     <td>{t.server || '-'}</td>
                     <td>{t.createdAt ? new Date(t.createdAt).toLocaleString(undefined, { hour12: false }) : '-'}</td>
-                    <td className="d-flex flex-wrap gap-1">
-                      <div className="action-buttons">
+                    <td className="d-flex flex-column gap-1">
+                      <div className="action-buttons vertical">
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-secondary"
                           disabled={!t.token}
                           onClick={() => { if (t.token) { try { navigator.clipboard.writeText(t.token); } catch (_) {} } }}
+                          style={{ minWidth: '60px' }}
                         >Copy</button>
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-danger"
                           onClick={() => handleDelete(t.id)}
+                          style={{ minWidth: '60px' }}
                         >Delete</button>
                       </div>
                     </td>
